@@ -6,6 +6,7 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA, TruncatedSVD
 from smac import HyperparameterOptimizationFacade, Scenario
 from sklearn.base import clone
+from feature_selection import feature_selection
 # from sklearn.model_selection import cross_val_score
 
 class Preprocesser:
@@ -97,7 +98,7 @@ def train_rnd_forest(X_train:np.ndarray, y_train:np.ndarray, times:np.ndarray, w
     scenario = Scenario(
         cs,
         n_workers=-1,
-        walltime_limit=20*60,
+        walltime_limit=10*60,
         n_trials=10000000
     )
 
@@ -178,27 +179,20 @@ def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict]) -> di
     X_test = np.array([e['features'] for e in test_data])
     y_test = np.array([e['label'] for e in test_data])
 
+    feature_indeces = feature_selection(train_data, 5)
+    print(feature_indeces)
+    X_train = X_train[:, feature_indeces]
+    X_test = X_test[:, feature_indeces]
+
     weights = np.array([np.max(times[i])/np.min(times[i]) for i in range(len(times))])
     weights = 1 + (weights / np.max(weights))
     weights = np.array([1 for _ in range(len(times))])
-    # preprocessor = Preprocesser(100)
-    # preprocessor.fit(X_train)
-    # X_train = preprocessor.transform(X_train)
-    # X_test = preprocessor.transform(X_test)
     hyperparam = train_rnd_forest(X_train, y_train, times, weights)
 
-    # k = hyperparam['k']
-    # del hyperparam['k']
 
     clf = RandomForestClassifier(**hyperparam, random_state=42)
     print('hyperparameters:', hyperparam, 'with k:', None)
     print(np.mean(cross_val_score(clf, X_train, y_train, times, None, weights, cv=5)))
 
-    # red = Preprocesser(k)
-    # red.fit(X_train)
-    # X_train = red.transform(X_train)
-    # X_test = red.transform(X_test)
-
     clf.fit(X_train, y_train)
-    # hyperparam['k'] = k
     return test_rnd_forest(clf, X_test, y_test, test_data, hyperparam)

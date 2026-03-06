@@ -3,6 +3,7 @@ from typing import Literal
 import pandas as pd
 import sys
 import os
+import json
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph

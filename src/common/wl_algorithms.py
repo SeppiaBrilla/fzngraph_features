@@ -212,9 +212,9 @@ def wl_features(graph:Graph,
     raise Exception(f'unrecognised wl_type: {wl_type}')
 
 if __name__ == '__main__':
-    from graph_loader import load_grap
+    from graph_loader import load_graph
     with open('graphs/accap-sep-accap_a3_f20_t10.graph') as f:
-        graph = load_grap(f)
+        graph = load_graph(f)
     n_iterations = 3
     colors = {}
     print(f'number of colors with standard wl ({n_iterations} iters):', len(colors.keys()))
