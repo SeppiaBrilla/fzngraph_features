@@ -127,7 +127,6 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int)
 
     return prune(train_data, test_data)
 
-
 def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
     fzn2feat_features = pd.read_csv('./data/fzn2feat.csv')
     for t in train_data:
