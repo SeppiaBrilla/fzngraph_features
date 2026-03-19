@@ -44,28 +44,47 @@ def validate_model(model:Model, dataset:DataLoader, loss) -> float:
     running_loss = 0.
 
     model.eval()
-    for _, (x, y) in enumerate(dataset):
+    for _, (x, y, t) in enumerate(dataset):
         out = model(x)
-        running_loss += float(loss(out, y).item())
+        running_loss += float(loss(out, y, t).item())
 
 
     return running_loss/len(dataset)
 
-def train_nn(X_train:torch.Tensor, y_train:torch.Tensor, epochs:int=300) -> Model:
+def cross_entropy(logits:torch.Tensor, targets:torch.Tensor, times:torch.Tensor):
+    """
+    logits: (batch_size, num_classes)
+    targets: (batch_size) - class indices (0 to C-1)
+    """
+    log_probs = torch.log(logits.clamp(min=1e-8))
+
+    batch_size = logits.shape[0]
+    target_indices = targets.argmax(dim=1)
+    # 2. Standard cross-entropy with one-hot targets
+    loss = -(targets * log_probs).sum(dim=1)  # (batch_size,)
+
+    # 3. Weight: target-class time / max time in that sample
+    target_times = times[torch.arange(batch_size), target_indices]
+    w = (target_times / (times.max(dim=1).values + 1e-8)).clamp(min=1)
+
+    return (w * loss).mean()
+
+def train_nn(X_train:torch.Tensor, y_train:torch.Tensor, times:torch.Tensor, epochs:int=300) -> Model:
     model = Model(X_train.shape[1], y_train.shape[1])
 
-    # X_train, X_val, y_train, y_val = train_test_split(X_train, y_train, test_size=.2, shuffle=True)
     n = int(len(y_train) * .8)
     X_val = X_train[n:]
     y_val = y_train[n:]
+    times_val = times[n:]
 
     X_train = X_train[:n]
     y_train = y_train[:n]
+    times_train = times[:n]
 
-    train_dataloader = DataLoader(TensorDataset(X_train, y_train), batch_size=4, shuffle=True)
-    validation_dataloader = DataLoader(TensorDataset(X_val, y_val), batch_size=4, shuffle=True)
+    train_dataloader = DataLoader(TensorDataset(X_train, y_train, times_train), batch_size=8, shuffle=True)
+    validation_dataloader = DataLoader(TensorDataset(X_val, y_val, times_val), batch_size=8, shuffle=True)
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=3e-6)
+    optimizer = torch.optim.AdamW(model.parameters(), lr=8e-6)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=100, gamma=0.9)
 
 
@@ -73,19 +92,19 @@ def train_nn(X_train:torch.Tensor, y_train:torch.Tensor, epochs:int=300) -> Mode
     best_loss = torch.tensor(float('inf'))
     for epoch in range(epochs):
         model.train()
-        for i, (x, y) in enumerate(train_dataloader):
+        for i, (x, y, t) in enumerate(train_dataloader):
             optimizer.zero_grad()
 
             outputs = model(x)
 
-            loss = F.cross_entropy(outputs, y)
+            loss = cross_entropy(outputs, y, t)
             loss.backward()
 
             optimizer.step()
 
         scheduler.step()
-        train_loss = validate_model(model, train_dataloader, F.cross_entropy)
-        val_loss = validate_model(model, validation_dataloader, F.cross_entropy)
+        train_loss = validate_model(model, train_dataloader, cross_entropy)
+        val_loss = validate_model(model, validation_dataloader, cross_entropy)
         if val_loss < best_loss:
             best_loss = val_loss
             best_model.load_state_dict(model.state_dict())
@@ -137,24 +156,29 @@ def test_nn(model:Model, X_test:torch.Tensor, y_test:torch.Tensor, test_data:lis
         'clf_cp-sat': float(pred_time/cp_sat_time_time)
         }
 
-def train_and_test_nn(train_data:list[dict], test_data:list[dict], reduce:bool) -> dict:
+def train_and_test_nn(train_data:list[dict], test_data:list[dict], scale:bool) -> dict:
     SEED = 42
     torch.manual_seed(SEED)
     random.seed(SEED)
-    X_train = np.array([e['features'] for e in train_data])
-
-    scaler = MinMaxScaler()
-
-    X_train = scaler.fit_transform(X_train)
-    X_train = torch.tensor(X_train, dtype=torch.float32)
 
     y_label = {0: [1., 0., 0.], 1: [0., 1., 0.], 2: [0., 0., 1.]}
-    y_train = torch.tensor([y_label[e['label']] for e in train_data])
+
+    X_train = np.array([e['features'] for e in train_data])
     X_test = np.array([e['features'] for e in test_data])
-    X_test = scaler.transform(X_test)
+    if scale:
+        scaler = MinMaxScaler()
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
+    X_train = torch.tensor(X_train, dtype=torch.float32)
     X_test = torch.tensor(X_test, dtype=torch.float32)
+
+    y_train = torch.tensor([y_label[e['label']] for e in train_data])
     y_test = torch.tensor([y_label[e['label']] for e in test_data])
 
-    model = train_nn(X_train, y_train)
+    times = torch.tensor([[e['chuffed'], e['cp-sat'], e['cp-sat']] for e in train_data], dtype=torch.float32)
 
+    model = train_nn(X_train, y_train, times)
+    print("train")
+    test_nn(model, X_train, y_train, train_data)
+    print("test")
     return test_nn(model, X_test, y_test, test_data)

@@ -1,5 +1,12 @@
 from typing import Literal
-from .graph_loader import Graph
+try:
+    from .graph_loader import is_global
+except:
+    from graph_loader import is_global
+try:
+    from .graph_loader import Graph
+except:
+    from graph_loader import Graph
 
 COLORS = {}
 
@@ -193,6 +200,78 @@ def wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, tr
 
     return [int(c) for c in node_colors]
 
+def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
+    node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
+    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
+    for uc in sorted(set(node_colors)):
+        if not uc in colors:
+            colors[uc] = str(hash(uc))
+    node_colors = [colors[uc] for uc in node_colors]
+
+
+    constraints_per_variable = 0
+    constraints_per_par = 0
+    n_var, n_par = 0, 0
+    pairs = {}
+
+    levels = {}
+
+    for i in range(max_iter):
+        neighbour_colors = [[] for _ in node_colors]
+        for (_from, _to), _ in graph.edge_iterator:
+            if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
+                continue
+            from_idx = node_idx[_from.label]
+            to_idx = node_idx[_to.label]
+            neighbour_colors[to_idx].append(node_colors[from_idx])
+
+        updated_colors = []
+        for i in range(len(neighbour_colors)):
+            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
+
+        if training:
+            for uc in sorted(set(updated_colors)):
+                if uc in colors.values():
+                    continue
+                if not uc in colors:
+                    colors[uc] = str(hash(uc))
+
+        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
+        levels[i] = [int(c) for c in node_colors]
+        node_colors = new_node_colors
+
+    for node in graph.nodes:
+        if node._type == 'var_node':
+            constraints_per_variable += len(graph.edge_from(node))
+            n_var += 1
+        elif node._type in ['par_node', 'literal_node']:
+            constraints_per_par += len(graph.edge_from(node))
+            n_par += 1
+        elif is_global(node._type) or 'lin_' in node._type or 'multi_' in node._type:
+            for _from, _ in graph.edge_to(node):
+                pair = (_from._type if _from._type != 'literal_node' else 'par_node', node._type)
+                if not pair in pairs:
+                    pairs[pair] = 0
+                pairs[pair] += 1
+
+    globals_set = sorted(set(p[1] for p in pairs.keys()))
+    for g in globals_set:
+        color = g + ',' + ''.join(sorted(t for t, f in pairs.keys() if f == g))
+        h = str(hash(g))
+        assert h in node_colors, (g, pairs)
+        if training and not color in colors:
+            colors[color] = str(hash(color))
+        if color in colors:
+            node_colors[node_colors.index(h)] = str(hash(color))
+    extra_info = {
+        'levels': levels,
+        'globals_pairs': pairs,
+        'cpv': constraints_per_variable / n_var,
+        'cpp': constraints_per_par / n_par,
+        'n_nodes': len(graph.nodes)
+    }
+    return [int(c) for c in node_colors], extra_info
+
 def wl_features(graph:Graph,
                 colors:dict,
                 max_iter:int=10,
@@ -213,10 +292,12 @@ def wl_features(graph:Graph,
 
 if __name__ == '__main__':
     from graph_loader import load_graph
-    with open('graphs/accap-sep-accap_a3_f20_t10.graph') as f:
+    # with open('./data/graphs/tower-sep-tower_070_070_15_070-08.graph') as f:
+    with open('./data/graphs/model4_opt-sep-test05.graph') as f:
         graph = load_graph(f)
     n_iterations = 3
     colors = {}
+    wl_features(graph, colors, max_iter=n_iterations, wl_type='standard')
     print(f'number of colors with standard wl ({n_iterations} iters):', len(colors.keys()))
     colors = {}
     wl_features(graph, colors, max_iter=n_iterations, wl_type='node_features')
@@ -227,3 +308,7 @@ if __name__ == '__main__':
     colors = {}
     wl_features(graph, colors, max_iter=n_iterations, wl_type='node_edge_features')
     print(f'number of colors with node and edge-features agumented wl ({n_iterations} iters):', len(colors.keys()))
+    print("===========================================================================")
+    colors = {}
+    wl_extended_features(graph, colors)
+    print(len(colors))

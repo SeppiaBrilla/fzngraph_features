@@ -5,3 +5,4 @@ argparse
 pandas
 tqdm
 networkx
+torch

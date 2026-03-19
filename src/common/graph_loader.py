@@ -3,6 +3,9 @@ import networkx as nx
 
 NODE_TYPE = Literal['var_node', 'par_node', 'literal_node', 'mult_node', 'lin_sum_node', 'sum_node', 'equality_node', 'inequality_node', 'le_node', 'leq_node', 'imply_node', 'iff_node', 'not_node', 'or_node', 'and_node', 'xor_node', 'index_node', 'abs_node', 'division_node', 'max_node', 'min_node', 'modulo_node', 'pow_node', 'in_node', 'card_node', 'diff_node', 'intersect_node', 'subset_node', 'symdiff_node', 'union_node', 'acos_node', 'acosh_node', 'asin_node', 'asinh_node', 'atan_node', 'atanh_node', 'cos_node', 'cosh_node', 'sin_node', 'sinh_node', 'tan_node', 'tanh_node', 'div_node', 'exp_node', 'ln_node', 'log10_node', 'log2_node', 'sqrt_node', 'maximise_node', 'minimise_node', 'array_node', 'cumulatives_node', 'int_element_node', 'int_lin_eq_imp_node', 'array_int_maximum_node', 'schedule_unary_node', 'int_le_imp_node', 'global_cardinality_node', 'global_cardinality_low_up_node', 'maximum_arg_int_offset_node', 'circuit_node', 'count_eq_reif_node', 'set_in_imp_node', 'count_eq_node', 'global_cardinality_low_up_closed_node', 'bool_xor_imp_node', 'nooverlap_node', 'regular_node', 'all_different_node', 'eq_imp_node', 'all_equal_node', 'bool_element_node', 'array_int_minimum_node', 'bool_clause_reif_node', 'int_element2d_node', 'bin_packing_load_node', 'table_int_node', 'precede_node', 'array_int_lq_node', 'int_lin_le_imp_node', 'int_lin_ne_imp_node', 'increasing_int_node', 'inverse_offsets_node', 'nvalue_node', 'int_ne_imp_node', 'increasing_bool_node', 'member_int_node', 'table_int_imp_node', 'at_least_node', 'at_most_node', 'int_pow_node', 'global_cardinality_closed_node']
 
+def is_global(node_type:str) -> bool:
+    return node_type in ['cumulatives_node', 'int_element_node', 'int_lin_eq_imp_node', 'array_int_maximum_node', 'schedule_unary_node', 'int_le_imp_node', 'global_cardinality_node', 'global_cardinality_low_up_node', 'maximum_arg_int_offset_node', 'circuit_node', 'count_eq_reif_node', 'set_in_imp_node', 'count_eq_node', 'global_cardinality_low_up_closed_node', 'bool_xor_imp_node', 'nooverlap_node', 'regular_node', 'all_different_node', 'eq_imp_node', 'all_equal_node', 'bool_element_node', 'array_int_minimum_node', 'bool_clause_reif_node', 'int_element2d_node', 'bin_packing_load_node', 'table_int_node', 'precede_node', 'array_int_lq_node', 'int_lin_le_imp_node', 'int_lin_ne_imp_node', 'increasing_int_node', 'inverse_offsets_node', 'nvalue_node', 'int_ne_imp_node', 'increasing_bool_node', 'member_int_node', 'table_int_imp_node', 'at_least_node', 'at_most_node', 'int_pow_node', 'global_cardinality_closed_node', 'lin_sum_node']
+
 class Edge:
     def __init__(self, label:str) -> None:
         self.label = label
@@ -40,18 +43,18 @@ class Graph:
         assert hash(_from) in self.node_set, f'{_from} not in nodes'
         assert hash(_to) in self.node_set, f'{_to} not in nodes'
         self.edges[hash(_from),hash(_to)] = e
-        if not _to in self._edge_to:
+        if not hash(_to) in self._edge_to:
             self._edge_to[hash(_to)] = []
-        if not _from in self._edge_from:
+        if not hash(_from) in self._edge_from:
             self._edge_from[hash(_from)] = []
         self._edge_to[hash(_to)].append((_from, e))
         self._edge_from[hash(_from)].append((_to, e))
 
     def edge_to(self, node:Node) -> list[tuple[Node,Edge]]:
-        return self._edge_to[hash(node)]
+        return self._edge_to.get(hash(node), [])
 
     def edge_from(self, node:Node) -> list[tuple[Node,Edge]]:
-        return self._edge_from[hash(node)]
+        return self._edge_from.get(hash(node),[])
 
     @property
     def adjacency_matrix(self) -> list[list[int]]:
