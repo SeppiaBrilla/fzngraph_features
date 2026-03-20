@@ -4,6 +4,7 @@ import pandas as pd
 import sys
 import os
 import json
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
@@ -11,6 +12,7 @@ from train_neural_network import train_and_test_nn
 from common.wl_algorithms import wl_features, wl_extended_features
 from train_as_forest import train_and_test_rnd_forest
 from train_as_svc import train_and_test_svc
+from train_as_knn import train_and_test_knn
 from copy import deepcopy
 import numpy as np
 from collections import Counter
@@ -24,7 +26,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
 # parser.add_argument('-r', '--reduction', required=False, type=int, default=-1)
 # parser.add_argument('-t', '--train-time', required=False, type=int, default=30)
-parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn'])
+parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'knn'])
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
@@ -153,32 +155,32 @@ def get_features(
     '''
 
     if features_type == 'wl-0':
-        return compute_wl_features(train_data, test_data, 'standard', 3)
+        return compute_wl_features(train_data, test_data, 'standard', 0)
     elif features_type == 'wl-1':
-        return compute_wl_features(train_data, test_data, 'standard', 5)
+        return compute_wl_features(train_data, test_data, 'standard', 1)
     elif features_type == 'wl-2':
-        return compute_wl_features(train_data, test_data, 'standard', 7)
+        return compute_wl_features(train_data, test_data, 'standard', 2)
 
     elif features_type == 'wln-0':
-        return compute_wl_features(train_data, test_data, 'node_features', 1)
+        return compute_wl_features(train_data, test_data, 'node_features', 0)
     elif features_type == 'wln-1':
-        return compute_wl_features(train_data, test_data, 'node_features', 2)
+        return compute_wl_features(train_data, test_data, 'node_features', 1)
     elif features_type == 'wln-2':
-        return compute_wl_features(train_data, test_data, 'node_features', 3)
+        return compute_wl_features(train_data, test_data, 'node_features', 2)
 
     elif features_type == 'wle-0':
-        return compute_wl_features(train_data, test_data, 'edge_features', 3)
+        return compute_wl_features(train_data, test_data, 'edge_features', 0)
     elif features_type == 'wle-1':
-        return compute_wl_features(train_data, test_data, 'edge_features', 5)
+        return compute_wl_features(train_data, test_data, 'edge_features', 1)
     elif features_type == 'wle-2':
-        return compute_wl_features(train_data, test_data, 'edge_features', 7)
+        return compute_wl_features(train_data, test_data, 'edge_features', 2)
 
     elif features_type == 'wlne-0':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 3)
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 0)
     elif features_type == 'wlne-1':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 5)
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 1)
     elif features_type == 'wlne-2':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 7)
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 2)
 
     elif features_type == 'wlc-0':
         return compute_custom_wl(train_data, test_data, 0)
@@ -231,6 +233,8 @@ def main():
         res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat')
     elif model == 'nn':
         res = train_and_test_nn(train_data, test_data, False)
+    elif model == 'knn':
+        res = train_and_test_knn(train_data, test_data, False)
     else:
         raise Exception(f'still unsupported model type {model}')
     with open(output_file, 'w') as f:

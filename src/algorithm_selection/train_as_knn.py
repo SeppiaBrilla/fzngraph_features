@@ -1,5 +1,4 @@
 import numpy as np
-from sklearn.svm import SVC
 from multiprocessing import Pool
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import KFold, ParameterGrid
@@ -9,8 +8,108 @@ from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
 import random
 import multiprocessing as mp
+from collections import Counter
+from sklearn.base import BaseEstimator, ClassifierMixin
+from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
+from sklearn.utils.multiclass import unique_labels
 
-def cross_val_score(clf:SVC, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:int=5) -> float:
+
+class KNNClassifier(BaseEstimator, ClassifierMixin):
+    """
+    K-Nearest Neighbors Classifier compatible with scikit-learn.
+
+    Parameters:
+    -----------
+    k : int, default=5
+        Number of neighbors to use by default for kneighbors queries.
+    """
+
+    def __init__(self, k=5):
+        self.k = k
+
+    def fit(self, X, y):
+        """
+        Fit the model using X as training data and y as target values.
+
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            Training data.
+        y : array-like, shape (n_samples,)
+            Target values.
+
+        Returns:
+        -------
+        self : object
+            Returns self.
+        """
+        X, y = check_X_y(X, y)
+        self.classes_ = unique_labels(y)
+        self.X_ = X
+        self.y_ = y
+        return self
+
+    def predict(self, X):
+        """
+        Predict the class labels for the provided data.
+
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            Test samples.
+
+        Returns:
+        -------
+        y : array, shape (n_samples,)
+            Class labels for each data sample.
+        """
+        check_is_fitted(self)
+        X = check_array(X)
+        y_pred = np.array([self._predict(x) for x in X])
+        return y_pred
+
+    def _predict(self, x):
+        """
+        Predict the class label for a single sample x.
+
+        Parameters:
+        -----------
+        x : array-like, shape (n_features,)
+            A single test sample.
+
+        Returns:
+        -------
+        y : int
+            Class label for the sample x.
+        """
+        distances = [np.linalg.norm(x - x_train) for x_train in self.X_]
+        k_indices = np.argsort(distances)[:self.k]
+        k_nearest_labels = [self.y_[i] for i in k_indices]
+        most_common = Counter(k_nearest_labels).most_common(1)
+        return most_common[0][0]
+
+    def score(self, X, y, sample_weight=None):
+        """
+        Return the mean accuracy on the given test data and labels.
+
+        Parameters:
+        -----------
+        X : array-like, shape (n_samples, n_features)
+            Test samples.
+        y : array-like, shape (n_samples,)
+            True labels for X.
+        sample_weight : array-like, shape (n_samples,), default=None
+            Sample weights.
+
+        Returns:
+        -------
+        score : float
+            Mean accuracy of self.predict(X) wrt. y.
+        """
+        y_pred = self.predict(X)
+        return np.mean(y_pred == y)
+
+def cross_val_score(clf:KNNClassifier, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:int=5) -> float:
     kf = KFold(n_splits=cv, shuffle=True, random_state=42)
     scores = []
     for train_idx, val_idx in kf.split(X):
@@ -32,7 +131,7 @@ def cross_val_score(clf:SVC, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:in
 def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, times:np.ndarray) -> dict:
     np.random.seed(42)
     random.seed(42)
-    model = SVC(**params, class_weight={0: 1, 1: 10, 2: 1})
+    model = KNNClassifier(**params)
     score = cross_val_score(model, X, y, times, cv=3)
     return {"params": params, "score": score}
 
@@ -43,15 +142,8 @@ def find_hyperparameters(
     n_jobs: int,
     ) -> dict:
 
-    #parameters: https://readmedium.com/support-vector-machine-svm-hyperparameter-tuning-in-python-a65586289bcb
     param_grid = {
-        'C': np.logspace(-1, 1, 3),
-        'kernel': ['rbf', 'poly'],
-        'gamma': np.logspace(-1, 1, 2).tolist() + ['scale', 'auto'],
-        'shrinking': [True, False],
-        'probability': [True, False],
-        'max_iter': [15000],
-        'random_state': [42]
+        'k': list(range(1, X.shape[0])),
     }
     all_combinations = list(ParameterGrid(param_grid))
     n_combinations = len(all_combinations)
@@ -90,7 +182,7 @@ def size_evaluate(param:dict, hyperparams:dict, X:np.ndarray, y:np.ndarray, time
     np.random.seed(42)
     random.seed(42)
     size = param['feature_size']
-    clf = SVC(**hyperparams, class_weight={0: 1, 1: 10, 2: 1})
+    clf = KNNClassifier(**hyperparams)
     if size is not None:
         pca = PCA(size, random_state=42)
         X_small = pca.fit_transform(X)
@@ -124,7 +216,7 @@ def find_size(X:np.ndarray, y:np.ndarray, times:np.ndarray, hyperparams:dict, is
  
     return best_config[0]
 
-def test_svc(clf:SVC, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict], hyperparam:dict) -> dict:
+def test_knn(clf:KNNClassifier, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict], hyperparam:dict) -> dict:
     pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, pred)
 
@@ -166,7 +258,7 @@ def test_svc(clf:SVC, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict]
         'hyperparameters': hyperparam
         }
 
-def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
+def train_and_test_knn(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
@@ -198,10 +290,10 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
         X_test = min_max.transform(X_test)
 
 
-    clf = SVC(**hyperparam, class_weight={0: 1, 1: 10, 2: 1})
+    clf = KNNClassifier(**hyperparam)
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, times, cv=3)))
     hyperparam['size'] = size
 
     clf.fit(X_train, y_train)
-    return test_svc(clf, X_test, y_test, test_data, hyperparam)
+    return test_knn(clf, X_test, y_test, test_data, hyperparam)
