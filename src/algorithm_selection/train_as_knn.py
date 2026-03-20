@@ -6,7 +6,7 @@ from sklearn.decomposition import PCA
 from functools import partial
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
-import random
+import random, math
 import multiprocessing as mp
 from collections import Counter
 from sklearn.base import BaseEstimator, ClassifierMixin
@@ -142,8 +142,9 @@ def find_hyperparameters(
     n_jobs: int,
     ) -> dict:
 
+    # return {'k': 20}
     param_grid = {
-        'k': list(range(1, X.shape[0])),
+        'k': list(range(1, X.shape[0], 2)),
     }
     all_combinations = list(ParameterGrid(param_grid))
     n_combinations = len(all_combinations)
@@ -171,9 +172,9 @@ def find_hyperparameters(
         row = {'param':r["params"], "score": r["score"]}
         rows.append(row)
  
-    # best_score = min(rows, key=lambda x: x['score'])['score']
-    # equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
-    best_config = min(rows, key=lambda x: x['score'])
+    best_score = min(rows, key=lambda x: x['score'])['score']
+    equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
+    best_config = min(equivalent_scores, key=lambda x: x['param']['k'])
     print('best config:', best_config)
  
     return best_config['param']
