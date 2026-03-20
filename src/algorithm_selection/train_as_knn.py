@@ -13,7 +13,6 @@ from sklearn.base import BaseEstimator, ClassifierMixin
 from sklearn.utils.validation import check_X_y, check_array, check_is_fitted
 from sklearn.utils.multiclass import unique_labels
 
-
 class KNNClassifier(BaseEstimator, ClassifierMixin):
     """
     K-Nearest Neighbors Classifier compatible with scikit-learn.
@@ -85,8 +84,12 @@ class KNNClassifier(BaseEstimator, ClassifierMixin):
         distances = [np.linalg.norm(x - x_train) for x_train in self.X_]
         k_indices = np.argsort(distances)[:self.k]
         k_nearest_labels = [self.y_[i] for i in k_indices]
-        most_common = Counter(k_nearest_labels).most_common(1)
-        return most_common[0][0]
+        counts = Counter(k_nearest_labels)
+        max_count = max(counts.values())
+        # Get all labels with max count
+        candidates = [label for label, count in counts.items() if count == max_count]
+        # If there's a tie, return 1
+        return max(candidates) if len(candidates) > 1 else candidates[0]
 
     def score(self, X, y, sample_weight=None):
         """
@@ -142,9 +145,8 @@ def find_hyperparameters(
     n_jobs: int,
     ) -> dict:
 
-    # return {'k': 20}
     param_grid = {
-        'k': list(range(1, X.shape[0], 2)),
+        'k': list(range(1, X.shape[0])),
     }
     all_combinations = list(ParameterGrid(param_grid))
     n_combinations = len(all_combinations)
@@ -174,7 +176,7 @@ def find_hyperparameters(
  
     best_score = min(rows, key=lambda x: x['score'])['score']
     equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
-    best_config = min(equivalent_scores, key=lambda x: x['param']['k'])
+    best_config = max(equivalent_scores, key=lambda x: x['param']['k'])
     print('best config:', best_config)
  
     return best_config['param']
