@@ -1,71 +1,40 @@
-import subprocess
-import concurrent.futures
-def run_command(command):
-    """Execute a single command and return its result"""
-    try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            capture_output=True,
-            text=True,
-            check=True
-        )
-        return {
-            'command': command,
-            'success': True,
-            'stdout': result.stdout,
-            'stderr': result.stderr,
-            'returncode': result.returncode
-        }
-    except subprocess.CalledProcessError as e:
-        return {
-            'command': command,
-            'success': False,
-            'stdout': e.stdout,
-            'stderr': e.stderr,
-            'returncode': e.returncode
-        }
+import argparse, subprocess
 
-def run_commands_parallel(commands):
-    """Run multiple commands in parallel using ThreadPoolExecutor"""
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(commands)) as executor:
-        # Submit all commands
-        futures = [executor.submit(run_command, cmd) for cmd in commands]
-        # Wait for all to complete and collect results
-        results = [future.result() for future in concurrent.futures.as_completed(futures)]
-    return results
 
-if __name__ == "__main__":
-    # Example commands - replace these with your actual commands
-    commands = [
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-1 -m rnd-forest --cv-fold 0 --result results3/as_wlc-1-forest-0.json --reduction -1 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-1 -m rnd-forest --cv-fold 1 --result results3/as_wlc-1-forest-1.json --reduction -1 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-1 -m rnd-forest --cv-fold 2 --result results3/as_wlc-1-forest-2.json --reduction -1 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-1 -m rnd-forest --cv-fold 3 --result results3/as_wlc-1-forest-3.json --reduction -1 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-1 -m rnd-forest --cv-fold 4 --result results3/as_wlc-1-forest-4.json --reduction -1 -t 60",
+parser = argparse.ArgumentParser()
+parser.add_argument('-e', '--experiment', type=str, choices=['as', 'par'], required=True)
+parser.add_argument('-f', '--features', type=str, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'], required=True)
+parser.add_argument('-c', '--cv-fold', type=int, choices=[2,3,5], required=False)
+parser.add_argument('-r', '--rnd-state', type=list, nargs='+', required=False)
+parser.add_argument('-m', '--model', type=str, choices=['svc', 'rnd-forest', 'nn', 'knn'], required=True)
+parser.add_argument('-b', '--base-name', required=True)
 
-        "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 0 --result results3/as_wlc-2-95-forest-0.json --reduction 95 -t 60",
-        "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 1 --result results3/as_wlc-2-95-forest-1.json --reduction 95 -t 60",
-        "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 2 --result results3/as_wlc-2-95-forest-2.json --reduction 95 -t 60",
-        "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 3 --result results3/as_wlc-2-95-forest-3.json --reduction 95 -t 60",
-        "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 4 --result results3/as_wlc-2-95-forest-4.json --reduction 95 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 0 --result results3/as_wlc-2-120-forest-0.json --reduction 120 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 1 --result results3/as_wlc-2-120-forest-1.json --reduction 120 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 2 --result results3/as_wlc-2-120-forest-2.json --reduction 120 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 3 --result results3/as_wlc-2-120-forest-3.json --reduction 120 -t 60",
-        # "python src/algorithm_selection/algorithm_selection.py -f wlc-2 -m rnd-forest --cv-fold 4 --result results3/as_wlc-2-120-forest-4.json --reduction 120 -t 60",
-    ]
-    print("Starting commands in parallel...")
-    results = run_commands_parallel(commands)
-    print("\nAll commands completed!\n")
-    print("=" * 50)
-    # Display results
-    for result in results:
-        print(f"\nCommand: {result['command']}")
-        print(f"Success: {result['success']}")
-        print(f"Return Code: {result['returncode']}")
-        if result['stdout']:
-            print(f"Output: {result['stdout'].strip()}")
-        if result['stderr']:
-            print(f"Error: {result['stderr'].strip()}")
-        print("-" * 50)
+args = parser.parse_args()
+
+if args.experiment == 'as':
+    assert args.cv_fold is not None, '-c/--cv-fold is required for experiment as'
+    command = f'python src/algorithm_selection/algorithm_selection.py -f {args.features} -m {args.model} --max-cv {args.cv_fold}'
+    for cv in range(args.cv_fold):
+        result:str = args.base_name
+        assert '{cv}' in result, '{cv} is required for as base-name'
+        assert '{model}' in result, '{model} is required for as base-name'
+        assert '{features}' in result, '{features} is required for as base-name'
+        result = result.replace('{cv}',str(cv)).replace('{model}', args.model).replace('{features}', args.features)
+        actual_command = command + f' --cv-fold {cv}' + f' --result {result}'
+        print(actual_command)
+        subprocess.run([actual_command], shell=True)
+
+elif args.experiment == 'par':
+    assert args.rnd_state is not None, '-r/--rnd-state is required for experiment par'
+    command = f'python src/parallelise/parallelise.py -f {args.features} -m {args.model}'
+    for rnd in args.rnd_state:
+        result:str = args.base_name
+        assert '{rnd-state}' in result, '{rnd-state} is required for par base-name'
+        assert '{model}' in result, '{model} is required for par base-name'
+        assert '{features}' in result, '{features} is required for par base-name'
+        result = result.replace('{rnd-state}',str(rnd)).replace('{model}', args.model).replace('{features}', args.features)
+        actual_command = command + f' -r {rnd}' + f' --result {result}'
+        subprocess.run([actual_command], shell=True)
+
+else:
+    print(f'unknown experiment {args.experiment}')
