@@ -42,7 +42,6 @@ def find_hyperparameters(
     times:np.ndarray,
     n_jobs: int,
     ) -> dict:
-    return {"max_depth": 10, "max_features": "log2", "min_samples_leaf": 2, "min_samples_split": 5, "n_estimators": 1200, "random_state": 42}
 
     #parameters: https://www.researchgate.net/figure/Tested-parameter-grid-for-random-forest-classifier_tbl1_350998771
     param_grid = {
