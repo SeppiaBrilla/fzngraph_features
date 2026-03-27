@@ -1,0 +1,1 @@
+{"accuracy": 0.65, "clf_time": 9216648.0, "vbs_time": 2327124.0, "chuffed_time": 18950354.0, "cp-sat_time": 13191273.0, "clf_vbs": 3.960531540218742, "chuffed_vbs": 8.143250638986148, "cp-sat_vbs": 5.668487368958423, "clf_chuffed": 0.4863575635579156, "clf_cp-sat": 0.6986928403346667, "hyperparameters": {"k": 2, "size": 80}}
