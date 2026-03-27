@@ -32,7 +32,7 @@ def cross_val_score(clf:RandomForestClassifier, X:np.ndarray, y:np.ndarray, time
 def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, times:np.ndarray) -> dict:
     np.random.seed(42)
     random.seed(42)
-    model = RandomForestClassifier(**params, class_weight={0: 1, 1: 10, 2: 1})
+    model = RandomForestClassifier(**params, class_weight={0: 1, 1: 1, 2: 1})
     score = cross_val_score(model, X, y, times, cv=3)
     return {"params": params, "score": score}
 
@@ -45,7 +45,7 @@ def find_hyperparameters(
 
     #parameters: https://www.researchgate.net/figure/Tested-parameter-grid-for-random-forest-classifier_tbl1_350998771
     param_grid = {
-        'n_estimators': [n for n in range(200, 2001, 200)],
+        'n_estimators': [n for n in range(200, 1001, 200)],
         'max_features': ['log2', 'sqrt'],
         'max_depth': [n for n in range(10, 101, 10)] + [None],
         'min_samples_split': [2, 5, 10],
@@ -89,7 +89,7 @@ def size_evaluate(param:dict, hyperparams:dict, X:np.ndarray, y:np.ndarray, time
     np.random.seed(42)
     random.seed(42)
     size = param['feature_size']
-    clf = RandomForestClassifier(**hyperparams, class_weight={0: 1, 1: 10, 2: 1}, n_jobs=1)
+    clf = RandomForestClassifier(**hyperparams, class_weight={0: 1, 1: 1, 2: 1}, n_jobs=1)
     if size is not None:
         pca = PCA(size, random_state=42)
         X_small = pca.fit_transform(X)
@@ -192,10 +192,11 @@ def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl
         X_test = pca.transform(X_test)
 
 
-    clf = RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 10, 2: 1})
+    clf = RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 1, 2: 1})
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, times, cv=3)))
     hyperparam['size'] = size
 
     clf.fit(X_train, y_train)
+    # test_rnd_forest(clf, )
     return test_rnd_forest(clf, X_test, y_test, test_data, hyperparam)

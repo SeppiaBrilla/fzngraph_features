@@ -9,10 +9,12 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
 from train_neural_network import train_and_test_nn
+from sklearn.model_selection import train_test_split
 from common.wl_algorithms import wl_features, wl_extended_features
 from train_as_forest import train_and_test_rnd_forest
 from train_as_svc import train_and_test_svc
 from train_as_knn import train_and_test_knn
+from train_as_forward_knn import train_and_test_forward_knn
 from copy import deepcopy
 import numpy as np
 from collections import Counter
@@ -22,16 +24,7 @@ import random
 random.seed(42)
 np.random.seed(42)
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
-# parser.add_argument('-r', '--reduction', required=False, type=int, default=-1)
-# parser.add_argument('-t', '--train-time', required=False, type=int, default=30)
-parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'knn'])
-parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
-parser.add_argument('--max-cv', required=True, type=int)
-parser.add_argument('--result', required=True, type=str)
-
-def load_data() -> list[dict]:
+def load_data() -> pd.DataFrame: #list[dict]:
     '''
     loads the algorithm selection dataset. Contains, for each datapoint:
         - the model name
@@ -42,7 +35,9 @@ def load_data() -> list[dict]:
         - the path of the corresponding graph
     '''
     data = pd.read_csv('./data/algorithm_selection_dataset.csv')
+    return data
 
+def data_to_list(data:pd.DataFrame) -> list[dict]:
     dict_data = []
     for i in range(len(data)):
         d = data.iloc[i]
@@ -55,6 +50,37 @@ def load_data() -> list[dict]:
         )
 
     return dict_data
+
+def split_stratified_by_gap(df:pd.DataFrame, rnd_state, train_size=161, test_size=40) -> tuple[pd.DataFrame, pd.DataFrame]:
+    # 1. Calculate VBS and the Gap
+    # VBS is the minimum PAR10 between the two solvers
+    vbs = df[['chuffed', 'cp-sat']].min(axis=1)
+    sbs = df['cp-sat']
+    df['gap'] = sbs - vbs
+
+    # 2. Discretize the gap into bins for stratification
+    # Using 10 bins (deciles) ensures enough granularity for the split
+    df['gap_strata'] = pd.qcut(df['gap'], q=8, labels=False, duplicates='drop')
+
+    # 3. Perform the stratified split
+    # 'stratify=df["gap_strata"]' ensures the gap distribution is preserved
+    train_df, test_df = train_test_split(
+        df,
+        train_size=train_size,
+        test_size=test_size,
+        stratify=df['gap_strata'],
+        random_state=rnd_state
+    )
+
+    # 4. Cleanup temporary columns
+    for d in [train_df, test_df]:
+        assert isinstance(d, pd.DataFrame), type(d)
+        d.drop(columns=['gap', 'gap_strata'], inplace=True)
+
+    assert isinstance(train_df, pd.DataFrame), type(train_df)
+    assert isinstance(test_df, pd.DataFrame), type(test_df)
+
+    return train_df, test_df
 
 def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
     train_features = np.array([t['features'] for t in train_data])
@@ -203,24 +229,36 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
     print(len(train_data), len(test_data))
     return train_data, test_data
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
+# parser.add_argument('-r', '--reduction', required=False, type=int, default=-1)
+# parser.add_argument('-t', '--train-time', required=False, type=int, default=30)
+parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'f-knn', 'knn'])
+# parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
+# parser.add_argument('--max-cv', required=True, type=int)
+parser.add_argument('--result', required=True, type=str)
+parser.add_argument('--rnd-state', required=True, type=int)
+
 def main():
     args = parser.parse_args()
     features_type:str = args.features
     model:str = args.model
-    fold:int = args.cv_fold
+    # fold:int = args.cv_fold
     output_file:str = args.result
-    max_cv:int = args.max_cv
-    # reduction:None|int = args.reduction
+    # max_cv:int = args.max_cv
+    rnd_state:int = args.rnd_state
     # train_time:None|int = args.train_time
 
     data = load_data()
     print('data loaded, starting to compute features')
 
-    MAX_SPLITS = max_cv #number of folds
-    data_per_split = len(data) // MAX_SPLITS #number of elements per fold. At each training step 4 folds are used for training and 1 for test
-    test_data = data[data_per_split*fold: data_per_split *(fold+1)] 
-    train_data = data[:data_per_split*fold] + data[data_per_split *(fold+1):]
+    # MAX_SPLITS = max_cv #number of folds
+    # data_per_split = len(data) // MAX_SPLITS #number of elements per fold. At each training step 4 folds are used for training and 1 for test
+    # test_data = data[data_per_split*fold: data_per_split *(fold+1)] 
+    # train_data = data[:data_per_split*fold] + data[data_per_split *(fold+1):]
     # train_data, test_data = split_data(data)
+    train_data, test_data = split_stratified_by_gap(data, rnd_state)
+    train_data, test_data = data_to_list(train_data), data_to_list(test_data)
 
     #data preparation, decide features type and pruning
     train_data, test_data = get_features(train_data, test_data, features_type)
@@ -235,6 +273,8 @@ def main():
         res = train_and_test_nn(train_data, test_data, False)
     elif model == 'knn':
         res = train_and_test_knn(train_data, test_data, False)
+    elif model == 'f-knn':
+        res = train_and_test_forward_knn(train_data, test_data, False)
     else:
         raise Exception(f'still unsupported model type {model}')
     with open(output_file, 'w') as f:

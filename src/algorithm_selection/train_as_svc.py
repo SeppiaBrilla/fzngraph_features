@@ -7,7 +7,7 @@ from sklearn.decomposition import PCA
 from functools import partial
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
-import random
+import random, math
 import multiprocessing as mp
 
 def cross_val_score(clf:SVC, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:int=5) -> float:
@@ -32,8 +32,8 @@ def cross_val_score(clf:SVC, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:in
 def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, times:np.ndarray) -> dict:
     np.random.seed(42)
     random.seed(42)
-    model = SVC(**params, class_weight={0: 1, 1: 10, 2: 1})
-    score = cross_val_score(model, X, y, times, cv=3)
+    model = SVC(**params, class_weight={0: 1, 1: 1, 2: 1})
+    score = cross_val_score(model, X, y, times, cv=5)
     return {"params": params, "score": score}
 
 def find_hyperparameters(
@@ -45,9 +45,9 @@ def find_hyperparameters(
 
     #parameters: https://readmedium.com/support-vector-machine-svm-hyperparameter-tuning-in-python-a65586289bcb
     param_grid = {
-        'C': np.logspace(-1, 1, 3),
+        'C': np.logspace(-1, 1, 5),
         'kernel': ['rbf', 'poly'],
-        'gamma': np.logspace(-1, 1, 2).tolist() + ['scale', 'auto'],
+        'gamma':  ['scale', 'auto'],
         'shrinking': [True, False],
         'probability': [True, False],
         'max_iter': [15000],
@@ -55,11 +55,11 @@ def find_hyperparameters(
     }
     all_combinations = list(ParameterGrid(param_grid))
     n_combinations = len(all_combinations)
- 
+
     n_workers = n_jobs
- 
+
     worker_fn = partial(_evaluate_combination, X=X, y=y, times=times)
- 
+
     # Run in parallel
     results = []
     with Pool(processes=n_workers) as pool:
@@ -79,9 +79,12 @@ def find_hyperparameters(
         row = {'param':r["params"], "score": r["score"]}
         rows.append(row)
  
-    # best_score = min(rows, key=lambda x: x['score'])['score']
-    # equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
-    best_config = min(rows, key=lambda x: x['score'])
+
+    best_score = min(rows, key=lambda x: x['score'])['score']
+    equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
+    best_config = min(equivalent_scores, key=lambda x: (x['param']['C'],
+                                                        x['param']['gamma'] if isinstance(x['param']['gamma'], (int,float)) else 0,
+                                                        0 if x['param']['kernel'] == 'rbf' else 1))
     print('best config:', best_config)
  
     return best_config['param']
@@ -90,7 +93,7 @@ def size_evaluate(param:dict, hyperparams:dict, X:np.ndarray, y:np.ndarray, time
     np.random.seed(42)
     random.seed(42)
     size = param['feature_size']
-    clf = SVC(**hyperparams, class_weight={0: 1, 1: 10, 2: 1})
+    clf = SVC(**hyperparams, class_weight={0: 1, 1: 1, 2: 1})
     if size is not None:
         pca = PCA(size, random_state=42)
         X_small = pca.fit_transform(X)
@@ -187,7 +190,6 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
 
     hyperparam = find_hyperparameters(X_train, y_train, times, 10)
     size = find_size(X_train, y_train, times, hyperparam, is_wl)
-    # size = 80
     if not size is None:
         pca = PCA(n_components=size, random_state=42)
         X_train = pca.fit_transform(X_train)
@@ -198,10 +200,11 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
         X_test = min_max.transform(X_test)
 
 
-    clf = SVC(**hyperparam, class_weight={0: 1, 1: 10, 2: 1})
+    clf = SVC(**hyperparam, class_weight={0: 1, 1: 1, 2: 1})
     print('hyperparameters:', hyperparam)
-    print(np.mean(cross_val_score(clf, X_train, y_train, times, cv=3)))
+    print(np.mean(cross_val_score(clf, X_train, y_train, times, cv=5)))
     hyperparam['size'] = size
 
     clf.fit(X_train, y_train)
+    test_svc(clf, X_train, y_train, train_data, hyperparam)
     return test_svc(clf, X_test, y_test, test_data, hyperparam)

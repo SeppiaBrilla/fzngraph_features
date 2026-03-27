@@ -176,7 +176,7 @@ def find_hyperparameters(
  
     best_score = min(rows, key=lambda x: x['score'])['score']
     equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.1)]
-    best_config = max(equivalent_scores, key=lambda x: x['param']['k'])
+    best_config = min(equivalent_scores, key=lambda x: x['param']['k'])
     print('best config:', best_config)
  
     return best_config['param']
