@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
 from train_neural_network import train_and_test_nn
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import StratifiedKFold, train_test_split
 from common.wl_algorithms import wl_features, wl_extended_features
 from train_as_forest import train_and_test_rnd_forest
 from train_as_svc import train_and_test_svc
@@ -51,26 +51,34 @@ def data_to_list(data:pd.DataFrame) -> list[dict]:
 
     return dict_data
 
-def split_stratified_by_gap(df:pd.DataFrame, rnd_state, train_size=161, test_size=40) -> tuple[pd.DataFrame, pd.DataFrame]:
+def split_stratified_by_gap(df:pd.DataFrame, rnd_state, current_fold:int, max_fold:int) -> tuple[pd.DataFrame, pd.DataFrame]:
     # 1. Calculate VBS and the Gap
     # VBS is the minimum PAR10 between the two solvers
+    assert max_fold > 0, f'max fold must be > 0. got {max_fold}'
+    assert current_fold >= 0, f'current fold must positive. got {current_fold}'
+    assert current_fold < max_fold, f'current fold must be < max fold. got current fold:{current_fold} and max fold: {max_fold}'
+
     vbs = df[['chuffed', 'cp-sat']].min(axis=1)
     sbs = df['cp-sat']
     df['gap'] = sbs - vbs
 
     # 2. Discretize the gap into bins for stratification
     # Using 10 bins (deciles) ensures enough granularity for the split
-    df['gap_strata'] = pd.qcut(df['gap'], q=8, labels=False, duplicates='drop')
+    df['gap_strata'] = pd.qcut(df['gap'], q=5, labels=False, duplicates='drop')
 
     # 3. Perform the stratified split
     # 'stratify=df["gap_strata"]' ensures the gap distribution is preserved
-    train_df, test_df = train_test_split(
-        df,
-        train_size=train_size,
-        test_size=test_size,
-        stratify=df['gap_strata'],
-        random_state=rnd_state
-    )
+    skf = StratifiedKFold(n_splits=max_fold, shuffle=True, random_state=rnd_state)
+    idxs = [(train_idx, test_idx) for (train_idx, test_idx) in skf.split(df, df['gap_strata'])]
+    train_idx, test_idx = idxs[current_fold]
+    train_df, test_df = df.iloc[train_idx].copy(), df.iloc[test_idx].copy()
+    # train_df, test_df = train_test_split(
+    #     df,
+    #     train_size=train_size,
+    #     test_size=test_size,
+    #     stratify=df['gap_strata'],
+    #     random_state=rnd_state
+    # )
 
     # 4. Cleanup temporary columns
     for d in [train_df, test_df]:
@@ -231,33 +239,32 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
-# parser.add_argument('-r', '--reduction', required=False, type=int, default=-1)
-# parser.add_argument('-t', '--train-time', required=False, type=int, default=30)
 parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'f-knn', 'knn'])
-# parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
-# parser.add_argument('--max-cv', required=True, type=int)
+parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
+parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
 parser.add_argument('--rnd-state', required=True, type=int)
 
 def main():
     args = parser.parse_args()
-    features_type:str = args.features
+    features_type:Literal['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1',
+                          'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 
+                          'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
     model:str = args.model
-    # fold:int = args.cv_fold
+    fold:int = args.cv_fold
     output_file:str = args.result
-    # max_cv:int = args.max_cv
+    max_cv:int = args.max_cv
     rnd_state:int = args.rnd_state
     # train_time:None|int = args.train_time
 
     data = load_data()
     print('data loaded, starting to compute features')
 
-    # MAX_SPLITS = max_cv #number of folds
-    # data_per_split = len(data) // MAX_SPLITS #number of elements per fold. At each training step 4 folds are used for training and 1 for test
-    # test_data = data[data_per_split*fold: data_per_split *(fold+1)] 
-    # train_data = data[:data_per_split*fold] + data[data_per_split *(fold+1):]
-    # train_data, test_data = split_data(data)
-    train_data, test_data = split_stratified_by_gap(data, rnd_state)
+    train_data, test_data = split_stratified_by_gap(df=data,
+                                                    rnd_state=rnd_state,
+                                                    current_fold=fold,
+                                                    max_fold=max_cv)
+
     train_data, test_data = data_to_list(train_data), data_to_list(test_data)
 
     #data preparation, decide features type and pruning
@@ -266,7 +273,6 @@ def main():
 
     if model == 'rnd-forest':
         res = train_and_test_rnd_forest(train_data, test_data, features_type != 'fzn2feat', is_wlc= 'wlc' in features_type)
-        # res = train_and_test_rnd_forest_forward_selector(train_data, test_data)
     elif model == 'svc':
         res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat')
     elif model == 'nn':

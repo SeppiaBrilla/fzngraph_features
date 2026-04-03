@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.neural_network import MLPClassifier
 from multiprocessing import Pool
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import KFold, ParameterGrid
+from sklearn.model_selection import ParameterGrid, StratifiedKFold
 from sklearn.decomposition import PCA
 from functools import partial
 from sklearn.preprocessing import MinMaxScaler
@@ -11,9 +11,13 @@ import random, math
 import multiprocessing as mp
 
 def cross_val_score(clf:MLPClassifier, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:int=5) -> float:
-    kf = KFold(n_splits=cv, shuffle=True, random_state=42)
+    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     scores = []
-    for train_idx, val_idx in kf.split(X):
+    quantiles = np.linspace(0, 100, 8)
+    gap = np.abs(times[:, 0] - times[:, 1])
+    bins = np.unique(np.percentile(gap, quantiles))
+    buckets = np.digitize(gap, bins[1:-1])
+    for train_idx, val_idx in kf.split(X, buckets):
         X_train, X_val = X[train_idx], X[val_idx]
         y_train = y[train_idx]
         times_val = times[val_idx]

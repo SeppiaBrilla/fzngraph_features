@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.svm import SVC
 from multiprocessing import Pool
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import KFold, ParameterGrid
+from sklearn.model_selection import ParameterGrid, StratifiedKFold
 from sklearn.decomposition import PCA
 from functools import partial
 from sklearn.preprocessing import MinMaxScaler
@@ -11,14 +11,19 @@ import random, math
 import multiprocessing as mp
 
 def cross_val_score(clf:SVC, X:np.ndarray, y:np.ndarray, times:np.ndarray, cv:int=5) -> float:
-    kf = KFold(n_splits=cv, shuffle=True, random_state=42)
+    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     scores = []
-    for train_idx, val_idx in kf.split(X):
+    quantiles = np.linspace(0, 100, 8)
+    gap = np.abs(times[:, 0] - times[:, 1])
+    bins = np.unique(np.percentile(gap, quantiles))
+    buckets = np.digitize(gap, bins[1:-1])
+    for train_idx, val_idx in kf.split(X, buckets):
         X_train, X_val = X[train_idx], X[val_idx]
         y_train = y[train_idx]
         times_val = times[val_idx]
+        # weights = 1 + gap[train_idx] / np.max(gap[train_idx])
 
-        clf.fit(X_train, y_train)
+        clf.fit(X_train, y_train)#, sample_weight=weights)
         pred = clf.predict(X_val)
         pred_time = sum([times_val[i,p] for i,p in enumerate(pred)])
         t0 = sum([times_val[i,0] for i,_ in enumerate(pred)])
@@ -45,9 +50,9 @@ def find_hyperparameters(
 
     #parameters: https://readmedium.com/support-vector-machine-svm-hyperparameter-tuning-in-python-a65586289bcb
     param_grid = {
-        'C': np.logspace(-1, 1, 5),
-        'kernel': ['rbf', 'poly'],
-        'gamma':  ['scale', 'auto'],
+        'C': np.logspace(-1, 1, 4),
+        'kernel': ['rbf', 'poly', 'linear'],
+        'gamma':  np.logspace(-1, 1, 2).tolist() + ['scale', 'auto'],
         'shrinking': [True, False],
         'probability': [True, False],
         'max_iter': [15000],
@@ -190,6 +195,7 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
 
     hyperparam = find_hyperparameters(X_train, y_train, times, 10)
     size = find_size(X_train, y_train, times, hyperparam, is_wl)
+    # size = None
     if not size is None:
         pca = PCA(n_components=size, random_state=42)
         X_train = pca.fit_transform(X_train)
@@ -205,6 +211,9 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
     print(np.mean(cross_val_score(clf, X_train, y_train, times, cv=5)))
     hyperparam['size'] = size
 
-    clf.fit(X_train, y_train)
+    # weights = np.abs(times[:, 0] - times[:, 1])
+    # weights = 1 + weights / np.max(weights)
+
+    clf.fit(X_train, y_train)#, sample_weight=weights)
     test_svc(clf, X_train, y_train, train_data, hyperparam)
     return test_svc(clf, X_test, y_test, test_data, hyperparam)
