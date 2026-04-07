@@ -9,7 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
 from train_neural_network import train_and_test_nn
-from sklearn.model_selection import StratifiedKFold, train_test_split
+from sklearn.model_selection import StratifiedKFold
 from common.wl_algorithms import wl_features, wl_extended_features
 from train_as_forest import train_and_test_rnd_forest
 from train_as_svc import train_and_test_svc
@@ -34,7 +34,7 @@ def load_data() -> pd.DataFrame: #list[dict]:
         - solving time of the cp-sat solver
         - the path of the corresponding graph
     '''
-    data = pd.read_csv('./data/algorithm_selection_dataset.csv')
+    data = pd.read_csv('./data/algorithm_selection_dataset_score.csv')
     return data
 
 def data_to_list(data:pd.DataFrame) -> list[dict]:
@@ -46,41 +46,27 @@ def data_to_list(data:pd.DataFrame) -> list[dict]:
          'label': d['label'],
          'chuffed': d['chuffed'],
          'cp-sat': d['cp-sat'],
+         'cplex': d['cplex'],
          'graph': './data/' + d['graph']}
         )
 
     return dict_data
 
 def split_stratified_by_gap(df:pd.DataFrame, rnd_state, current_fold:int, max_fold:int) -> tuple[pd.DataFrame, pd.DataFrame]:
-    # 1. Calculate VBS and the Gap
-    # VBS is the minimum PAR10 between the two solvers
     assert max_fold > 0, f'max fold must be > 0. got {max_fold}'
     assert current_fold >= 0, f'current fold must positive. got {current_fold}'
     assert current_fold < max_fold, f'current fold must be < max fold. got current fold:{current_fold} and max fold: {max_fold}'
 
-    vbs = df[['chuffed', 'cp-sat']].min(axis=1)
-    sbs = df['cp-sat']
-    df['gap'] = sbs - vbs
+    solvers = df[['cp-sat', 'chuffed', 'cplex']]
+    df['gap'] = solvers.max(axis=1) - solvers.min(axis=1)
 
-    # 2. Discretize the gap into bins for stratification
-    # Using 10 bins (deciles) ensures enough granularity for the split
     df['gap_strata'] = pd.qcut(df['gap'], q=5, labels=False, duplicates='drop')
 
-    # 3. Perform the stratified split
-    # 'stratify=df["gap_strata"]' ensures the gap distribution is preserved
     skf = StratifiedKFold(n_splits=max_fold, shuffle=True, random_state=rnd_state)
     idxs = [(train_idx, test_idx) for (train_idx, test_idx) in skf.split(df, df['gap_strata'])]
     train_idx, test_idx = idxs[current_fold]
     train_df, test_df = df.iloc[train_idx].copy(), df.iloc[test_idx].copy()
-    # train_df, test_df = train_test_split(
-    #     df,
-    #     train_size=train_size,
-    #     test_size=test_size,
-    #     stratify=df['gap_strata'],
-    #     random_state=rnd_state
-    # )
 
-    # 4. Cleanup temporary columns
     for d in [train_df, test_df]:
         assert isinstance(d, pd.DataFrame), type(d)
         d.drop(columns=['gap', 'gap_strata'], inplace=True)
@@ -164,7 +150,7 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int)
     return prune(train_data, test_data)
 
 def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
-    fzn2feat_features = pd.read_csv('./data/fzn2feat.csv')
+    fzn2feat_features = pd.read_csv('./data/fzn2feat_joined.csv')
     for t in train_data:
         d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
         d = d.drop(columns=['problem','name'])
