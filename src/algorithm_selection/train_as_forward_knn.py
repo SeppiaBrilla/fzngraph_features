@@ -173,6 +173,7 @@ def test_forward_knn(clf:KNNClassifier, X_test:np.ndarray, y_test:np.ndarray, te
         }
 
 def train_and_test_forward_knn(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
+    raise NotImplementedError('forward knn has not been updated to work on borda count score')
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
