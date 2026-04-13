@@ -136,9 +136,11 @@ def test_rnd_forest(clf:RandomForestClassifier, X_test:np.ndarray, y_test:np.nda
     cplex_score = 0
     cp_sat_score = 0
     vbs_score = 0
+    predictions = {}
     for i, e in enumerate(test_data):
         x = np.array([X_test[i]])
         pred = clf.predict(x)[0]
+        predictions[f"{e['model']}-sep-{e['name']}"] = int(pred)
         if pred == 0:
             pred_score += e['cp-sat']
         elif pred == 1:
@@ -174,6 +176,7 @@ def test_rnd_forest(clf:RandomForestClassifier, X_test:np.ndarray, y_test:np.nda
         'cp-sat_vbs': float(vbs_score/cp_sat_score),
         'clf_chuffed': float(pred_score/chuffed_score),
         'clf_cp-sat': float(pred_score/cp_sat_score),
+        'predictions': predictions,
         'hyperparameters': hyperparam
         }
 
