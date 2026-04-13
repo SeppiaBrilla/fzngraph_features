@@ -216,7 +216,7 @@ def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool
 
     levels = {}
 
-    for i in range(max_iter):
+    for iter in range(max_iter):
         neighbour_colors = [[] for _ in node_colors]
         for (_from, _to), _ in graph.edge_iterator:
             if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
@@ -237,7 +237,7 @@ def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool
                     colors[uc] = str(hash(uc))
 
         new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        levels[i] = [int(c) for c in node_colors]
+        levels[iter] = [int(c) for c in node_colors]
         node_colors = new_node_colors
 
     for node in graph.nodes:
