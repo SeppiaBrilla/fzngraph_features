@@ -10,6 +10,11 @@ from tqdm import tqdm
 import random, math
 import multiprocessing as mp
 
+import os
+os.environ["OMP_NUM_THREADS"] = "5"
+os.environ["OPENBLAS_NUM_THREADS"] = "5"
+os.environ["MKL_NUM_THREADS"] = "5"
+
 def cross_val_score(clf:MLPClassifier, X:np.ndarray, y:np.ndarray, cv:int=5) -> float:
     kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     pred_scores = []
@@ -111,7 +116,7 @@ def test_nn(clf:MLPClassifier, X_test:np.ndarray, y_test:np.ndarray, test_data:l
     for i, e in enumerate(test_data):
         x = np.array([X_test[i]])
         pred = clf.predict(x)[0]
-        predictions[f"{e['model']}-sep-{e['name']}"] = {'pred':pred, 'true':e['label']}
+        predictions[f"{e['model']}-sep-{e['name']}"] = {'pred':int(pred), 'true':int(e['label'])}
 
 
     print(f"accuracy: {accuracy:.3f}")
