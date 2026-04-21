@@ -41,9 +41,7 @@ class CrossValidator:
 
 
 def _evaluate_combination(params: dict, X:np.ndarray, y:np.ndarray, problems:list[str]) -> dict:
-    np.random.seed(42)
-    random.seed(42)
-    model = RandomForestClassifier(**params, class_weight={0: 1, 1: 10, 2: 1})
+    model = RandomForestClassifier(**params, class_weight={0: 1, 1: 1, 2: 1})
     # scores = CrossValidator(X, y, problems, cv=3).score(model)
     scores = []
     cv=3
@@ -66,7 +64,7 @@ def find_hyperparameters(
 
     #parameters: https://www.researchgate.net/figure/Tested-parameter-grid-for-random-forest-classifier_tbl1_350998771
     param_grid = {
-        'n_estimators': [n for n in range(200, 2001, 200)],
+        'n_estimators': [n for n in range(200, 1001, 200)],
         'max_features': ['log2', 'sqrt'],
         'max_depth': [n for n in range(10, 101, 10)] + [None],
         'min_samples_split': [2, 5, 10],
@@ -113,10 +111,8 @@ def find_hyperparameters(
     return best_config['param']
 
 def size_evaluate(param:dict, hyperparams:dict, train_data:list[dict]) -> tuple[int|None,float]:
-    np.random.seed(42)
-    random.seed(42)
     size = param['feature_size']
-    clf = RandomForestClassifier(**hyperparams, class_weight={0: 1, 1: 10, 2: 1}, n_jobs=1)
+    clf = RandomForestClassifier(**hyperparams, class_weight={0: 1, 1: 1, 2: 1}, n_jobs=1)
     X = np.array([e['features'] for e in train_data])
     if size is not None:
         pca = PCA(size, random_state=42)
@@ -160,15 +156,21 @@ def find_size(train_data:list[dict], hyperparams:dict, is_wl:bool) -> int|None:
  
     return best_config[0]
 
-def test_rnd_forest(clf:RandomForestClassifier, X_test:np.ndarray, y_test:np.ndarray, hyperparam:dict) -> dict:
+def test_rnd_forest(clf:RandomForestClassifier, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict], hyperparam:dict) -> dict:
     pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, pred)
+    predictions = {}
+
+    for i, e in enumerate(test_data):
+        x = np.array([X_test[i]])
+        pred = int(clf.predict(x)[0])
+        predictions[f"{e['model']}-sep-{e['name']}"] = {'pred':pred, 'true':int(e['label'])}
 
     print(f"accuracy: {accuracy:.3f}")
-
     return {
         'accuracy': float(accuracy),
-        'hyperparameters': hyperparam
+        'hyperparameters': hyperparam,
+        'predictions': predictions
         }
 
 def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
@@ -198,9 +200,9 @@ def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl
         X_test = pca.transform(X_test)
 
 
-    clf = RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 10, 2: 1})
+    clf = RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 1, 2: 1})
     print('hyperparameters:', hyperparam)
     hyperparam['size'] = size
 
     clf.fit(X_train, y_train)
-    return test_rnd_forest(clf, X_test, y_test, hyperparam)
+    return test_rnd_forest(clf, X_test, y_test, test_data, hyperparam)

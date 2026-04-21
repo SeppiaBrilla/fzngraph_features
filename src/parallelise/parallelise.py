@@ -4,48 +4,54 @@ from typing import Literal
 import pandas as pd
 import sys
 import os
+
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
-from common.wl_algorithms import wl_features, wl_extended_features
+from common.wl_algorithms import wl_extended_features_with_edges, wl_features, wl_extended_features
 from tqdm import tqdm
 from train_p_forest import train_and_test_rnd_forest
 from train_p_svc import train_and_test_svc
-import json
+from train_p_nn import train_and_test_nn
+import json, torch, random
 from copy import deepcopy
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, StratifiedKFold
 from collections import Counter
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
-parser.add_argument('-m', '--model', type=str, required=True, choices=['rnd-forest', 'svc'])
-parser.add_argument('-r', '--rnd-state', type=int, required=True)
-parser.add_argument('--result', required=True, type=str)
+def set_seed(seed:int):
+    torch.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
 
-def load_data() -> list[dict]:
-    '''
-    loads the algorithm selection dataset. Contains, for each datapoint:
-        - the model name
-        - the instance name
-        - the correct label (0: chuffed better, 1: cp-sat better, 2: they are the same)
-        - solving time of the chuffed solver
-        - solving time of the cp-sat solver
-        - the path of the corresponding graph
-    '''
-    data = pd.read_csv('./data/algorithm_selection_dataset.csv')
+def load_data() -> pd.DataFrame:
+    return pd.read_csv('./data/parallelise_cplex.csv')
 
+def to_dict(data:pd.DataFrame) -> list[dict]:
     dict_data = []
     for i in range(len(data)):
         d = data.iloc[i]
         dict_data.append({'model': d['model'],
          'name': d['name'],
-         'label': d['label'],
-         'chuffed': d['chuffed'],
-         'cp-sat': d['cp-sat'],
+         'label': d['y'],
          'graph': './data/' + d['graph']}
         )
 
     return dict_data
+
+def split_stratified_by_gap(df:pd.DataFrame, rnd_state, current_fold:int, max_fold:int) -> tuple[pd.DataFrame, pd.DataFrame]:
+    assert max_fold > 0, f'max fold must be > 0. got {max_fold}'
+    assert current_fold >= 0, f'current fold must positive. got {current_fold}'
+    assert current_fold < max_fold, f'current fold must be < max fold. got current fold:{current_fold} and max fold: {max_fold}'
+
+    skf = StratifiedKFold(n_splits=max_fold, shuffle=True, random_state=rnd_state)
+    idxs = [(train_idx, test_idx) for (train_idx, test_idx) in skf.split(df, df['y'])]
+    train_idx, test_idx = idxs[current_fold]
+    train_df, test_df = df.iloc[train_idx].copy(), df.iloc[test_idx].copy()
+
+    assert isinstance(train_df, pd.DataFrame), type(train_df)
+    assert isinstance(test_df, pd.DataFrame), type(test_df)
+
+    return train_df, test_df
 
 def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
     train_features = np.array([t['features'] for t in train_data])
@@ -86,14 +92,17 @@ def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Lit
 
     return prune(train_data, test_data)
 
-def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int) -> tuple[list[dict],list[dict]]:
+def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool) -> tuple[list[dict],list[dict]]:
     colors = {}
 
     g_pairs = set()
     for t in tqdm(train_data, desc='train data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
+        if edge:
+            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+        else:
+            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
         t['features'] = res
         t['extra'] = extra
         for pair in extra['globals_pairs'].keys():
@@ -112,7 +121,10 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int)
     for t in tqdm(test_data, desc='test data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
+        if edge:
+            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=False)
+        else:
+            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
         counter = Counter(res)
         features = np.array([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
         tot_pairs = max(sum(extra['globals_pairs'].values()), 1)
@@ -121,7 +133,7 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int)
     return prune(train_data, test_data)
 
 def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
-    fzn2feat_features = pd.read_csv('./data/fzn2feat.csv')
+    fzn2feat_features = pd.read_csv('./data/fzn2feat_joined.csv')
     for t in train_data:
         d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
         d = d.drop(columns=['problem','name'])
@@ -139,7 +151,7 @@ def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict
 def get_features(
         train_data:list[dict],
         test_data:list[dict],
-        features_type:Literal['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wln-0', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat']
+        features_type:Literal['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wln-0', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat']
     ) -> tuple[list[dict], list[dict]]:
     '''
     for each feature-type returns the modified train and dataset agumented with the corresponding features
@@ -174,11 +186,16 @@ def get_features(
         return compute_wl_features(train_data, test_data, 'node_edge_features', 2)
 
     elif features_type == 'wlc-0':
-        return compute_custom_wl(train_data, test_data, 0)
+        return compute_custom_wl(train_data, test_data, 0, False)
     elif features_type == 'wlc-1':
-        return compute_custom_wl(train_data, test_data, 1)
+        return compute_custom_wl(train_data, test_data, 1, False)
     elif features_type == 'wlc-2':
-        return compute_custom_wl(train_data, test_data, 2)
+        return compute_custom_wl(train_data, test_data, 2, False)
+
+    elif features_type == 'wlce-1':
+        return compute_custom_wl(train_data, test_data, 1, True)
+    elif features_type == 'wlce-2':
+        return compute_custom_wl(train_data, test_data, 2, True)
 
     elif features_type == 'fzn2feat':
         return get_fzn2feat(train_data, test_data)
@@ -194,22 +211,38 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
     print(len(train_data), len(test_data))
     return train_data, test_data
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
+parser.add_argument('-m', '--model', type=str, required=True, choices=['rnd-forest', 'svc', 'nn'])
+parser.add_argument('-r', '--rnd-state', type=int, required=True)
+parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
+parser.add_argument('--max-cv', required=True, type=int)
+parser.add_argument('--result', required=True, type=str)
+
+
 def main():
     args = parser.parse_args()
-    features_type:str = args.features
-    rnd_state = args.rnd_state
+    features_type:Literal['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1',
+                          'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 
+                          'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
+    model:str = args.model
+    fold:int = args.cv_fold
     output_file:str = args.result
-    model:Literal['rnd-forest', 'svc'] = args.model
+    max_cv:int = args.max_cv
+    rnd_state:int = args.rnd_state
+
+
+    set_seed(rnd_state)
 
     data = load_data()
     print('data loaded, starting to compute features')
 
-    problems = list(set([d['model'] for d in data]))
+    train_df, test_df = split_stratified_by_gap(df=data,
+                                                rnd_state=rnd_state,
+                                                current_fold=fold,
+                                                max_fold=max_cv)
 
-    train_problems, test_problems = train_test_split(problems, test_size=.2, random_state=rnd_state)
-    train_data = [d for d in data if d['model'] in train_problems]
-    test_data = [d for d in data if d['model'] in test_problems]
-
+    train_data, test_data = to_dict(train_df), to_dict(test_df)
 
     #data preparation, decide features type and pruning
     train_data, test_data = get_features(train_data, test_data, features_type)
@@ -218,7 +251,11 @@ def main():
     if model == 'rnd-forest':
         res = train_and_test_rnd_forest(train_data, test_data, 'wl' in features_type, 'wlc' in features_type)
     elif model == 'svc':
-        res = train_and_test_svc(train_data, test_data, 'wl' in features_type, 'wlc' in features_type)
+        res = train_and_test_svc(train_data, test_data, rnd_state)
+    elif model == 'nn':
+        res = train_and_test_nn(train_data, test_data, rnd_state)
+    else:
+        raise Exception(f'unknown model {model}')
     with open(output_file, 'w') as f:
         json.dump(res, f)
 
