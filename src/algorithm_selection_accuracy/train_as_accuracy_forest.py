@@ -153,7 +153,7 @@ def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl
         X_train = X_train[:, sorted_indices]
         X_test  = X_test[:, sorted_indices]
 
-    hyperparam = find_hyperparameters(X_train, y_train, 10)
+    hyperparam = find_hyperparameters(X_train, y_train, 5)
     size = find_size(X_train, y_train, hyperparam, is_wl)
     if not size is None:
         pca = PCA(n_components=size, random_state=42)
