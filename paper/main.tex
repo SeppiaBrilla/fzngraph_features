@@ -1,0 +1,77 @@
+\documentclass[a4paper,UKenglish,cleveref, autoref, thm-restate]{lipics-v2021}
+\usepackage{subfiles}
+
+% Use the postscript times font!
+\usepackage{times}
+\usepackage{soul}
+\usepackage{multirow}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage[utf8]{inputenc}
+%\usepackage[small]{caption}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{booktabs}
+% \usepackage{algorithmic} % Conflicting with algpseudocode
+%\usepackage[switch]{lineno}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+
+
+% comments
+\usepackage{color}
+\definecolor{mygreen}{rgb}{0,0.6,0}
+\definecolor{darkGreen}{rgb}{0,0.4,0}
+
+\newcommand{\crc}[1]{\textcolor{red}{ #1}}
+\newcommand{\crcf}[1]{\textcolor{blue}{ #1}}
+
+%\authorrunning{Anonymous}
+%\hideLIPIcs
+\lstset{
+  basicstyle=\scriptsize\ttfamily,
+  columns=fullflexible, keepspaces=true,
+  tabsize=2, stepnumber=1,
+  numbers=left,
+  captionpos=b,
+  xleftmargin=5mm
+}
+
+\keywords{Constraint modelling, algorithm selection, machine learning, constraint solvers.}
+
+\ccsdesc{Computing methodologies~Artificial intelligence}
+
+\title{Using Weisfeiler-Leman Features for Algorithm Selection in Constraint Optimisation}
+
+\titlerunning{Using Weisfeiler-Leman Features for Algorithm Selection in Constraint Optimisation}
+
+\author{Anonymus}{Anonymus}{Anonymus}{}{}
+
+\authorrunning{Anonymus}
+
+\Copyright{Anonymus}
+
+\begin{document}
+
+
+\maketitle
+
+\begin{abstract}
+We have new features and they are decent enough.
+
+\end{abstract}
+
+\input{sections/introduction}
+\input{sections/background}
+\input{sections/graph_conversion}
+\input{sections/feature_extraction}
+\input{sections/experimental_results}
+
+\bibliographystyle{plain}
+\bibliography{references}
+
+
+\end{document}

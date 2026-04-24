@@ -1,0 +1,22 @@
+\section{Experimental Results}
+To test our methodology, we have implemented the graph conversion algorithm on top of the Flatzinc modelling language. We have then taken the instances from three Minizinc challenges (2023, 2024, and 2025), for a total of 300 instances and designed three different algorithm selection tasks around it: (i) algorithm selection based on the Borda count score on three solvers where the objective is to maximise the score, (ii) the same algorithm selection task but where the objective is to maximise the prediction accuracy and (iii) running a solver in its sequential and parallel version, we seek to predict if the parallel solver will meaningfully increase the performance with respect to the sequential version. The evaluation metrics will be predictive accuracy. 
+
+Each task will be compared against a baseline and the fzn2feat features: a feature set specifically designed for algorithm selection tasks for constraint programming. Due to the shallow depth of our graphs, we decided to test \texttt{WL}-based features with one or two aggregation steps.
+
+For each task, we trained three different ML models: (i) Support Vector Machine (SVM), (ii) Random Forest and (iii) a simple, three layer, multi-layer-perceptron (MLP). And the training process followed a four-steps pipeline:
+\begin{enumerate}
+    \item Perform grid search on a predefined set of hyperparameter configurations and score each hyperparameter configuration based on the mean 5-fold cross-validation score.
+    \item Select the hyperparameter configuration with the best score. Ties are broken by selecting the hyperparameter configuration with the lowest chance of overfitting:
+    \begin{itemize}
+        \item Lowest regularisation parameter, gamma and using the rbf kernel for SVM.
+        \item Smallest number of trees and depth for Random Forest.
+        \item Lowest number of training steps and smallest alpha for MLP.
+    \end{itemize}
+    \item Test the performance of the best configuration on a range of smaller features set obtained by applying PCA decomposition on the original features set. The tested values are in the range $[20, \min(\text{n\_features},\text{n\_training-datapoints})[$.
+    \item Select the feature set with the highest score between those obtained by applying PCA decomposition and the original one.
+\end{enumerate}
+
+\subsection{Borda Count Score Maximisation}
+In this task, we compared three sequential solvers on the 300 instances. The solvers were run without forcing them to follow the search annotations on a very old CPU (fill in) for a total of 20 minutes. On each instance, solvers have been scored based on the same borda count scoring strategy followed by the Minizinc challenge.\footnote{https://www.minizinc.org/challenge/2025/} 
+The task has been modeled as a classification task where the prediction label corresponded to the solver with the highest score. Ties have been broken by assigning the label to the solver with the highest overall score. 
+The three solver we selected are \texttt{Or-Tools}, \texttt{Chuffed} and \texttt{Cplex}. From the final dataset, we removed one instance which was trivially unsat (and from which it was impossible to extract features) and all instances where no solver ever found a solution. In the end, the final dataset was composed of 289 instances. We performed 5-fold cross-validation using a stratify strategy repeating the split 10 times with different random seeds for a total of 50 test. The train-test split was performed using Scikit-learn StratifiedKFold function\footnote{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html} where the stratification was performed on the gap between the virtual best score (the maximum theoretical score obtainable) and the worse possible score. 
