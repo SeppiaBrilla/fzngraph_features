@@ -2,3 +2,12 @@ __pycache__
 smac3_output
 .cache
 data/graphs
+*.aux
+*.bbl
+*.blg
+*.dfb_latexmk
+*.fls
+*.log
+paper/*.out
+*.synctex.gz
+*.vtc
