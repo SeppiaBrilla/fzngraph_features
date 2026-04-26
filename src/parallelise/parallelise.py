@@ -157,36 +157,26 @@ def get_features(
     for each feature-type returns the modified train and dataset agumented with the corresponding features
     '''
 
-    if features_type == 'wl-0':
-        return compute_wl_features(train_data, test_data, 'standard', 0)
-    elif features_type == 'wl-1':
+    if features_type == 'wl-1':
         return compute_wl_features(train_data, test_data, 'standard', 1)
     elif features_type == 'wl-2':
         return compute_wl_features(train_data, test_data, 'standard', 2)
 
-    elif features_type == 'wln-0':
-        return compute_wl_features(train_data, test_data, 'node_features', 0)
     elif features_type == 'wln-1':
         return compute_wl_features(train_data, test_data, 'node_features', 1)
     elif features_type == 'wln-2':
         return compute_wl_features(train_data, test_data, 'node_features', 2)
 
-    elif features_type == 'wle-0':
-        return compute_wl_features(train_data, test_data, 'edge_features', 0)
     elif features_type == 'wle-1':
         return compute_wl_features(train_data, test_data, 'edge_features', 1)
     elif features_type == 'wle-2':
         return compute_wl_features(train_data, test_data, 'edge_features', 2)
 
-    elif features_type == 'wlne-0':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 0)
     elif features_type == 'wlne-1':
         return compute_wl_features(train_data, test_data, 'node_edge_features', 1)
     elif features_type == 'wlne-2':
         return compute_wl_features(train_data, test_data, 'node_edge_features', 2)
 
-    elif features_type == 'wlc-0':
-        return compute_custom_wl(train_data, test_data, 0, False)
     elif features_type == 'wlc-1':
         return compute_custom_wl(train_data, test_data, 1, False)
     elif features_type == 'wlc-2':

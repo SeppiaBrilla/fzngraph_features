@@ -10,7 +10,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 from common.graph_loader import load_graph
 from train_neural_network import train_and_test_nn
 from sklearn.model_selection import StratifiedKFold
-from common.wl_algorithms import wl_features, wl_extended_features
+from common.wl_algorithms import wl_features, wl_extended_features, wl_extended_features_with_edges
 from train_as_accuracy_forest import train_and_test_rnd_forest
 from train_as_accuracy_svc import train_and_test_svc
 from train_as_accuracy_knn import train_and_test_knn
@@ -103,14 +103,17 @@ def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Lit
 
     return prune(train_data, test_data)
 
-def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int) -> tuple[list[dict],list[dict]]:
+def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool) -> tuple[list[dict],list[dict]]:
     colors = {}
 
     g_pairs = set()
     for t in tqdm(train_data, desc='train data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
+        if edge:
+            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+        else:
+            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
         t['features'] = res
         t['extra'] = extra
         for pair in extra['globals_pairs'].keys():
@@ -129,7 +132,10 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int)
     for t in tqdm(test_data, desc='test data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
+        if edge:
+            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=False)
+        else:
+            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
         counter = Counter(res)
         features = np.array([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
         tot_pairs = max(sum(extra['globals_pairs'].values()), 1)
@@ -156,46 +162,41 @@ def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict
 def get_features(
         train_data:list[dict],
         test_data:list[dict],
-        features_type:Literal['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wln-0', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat']
+        features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat']
     ) -> tuple[list[dict], list[dict]]:
     '''
     for each feature-type returns the modified train and dataset agumented with the corresponding features
     '''
 
-    if features_type == 'wl-0':
-        return compute_wl_features(train_data, test_data, 'standard', 0)
-    elif features_type == 'wl-1':
+    if features_type == 'wl-1':
         return compute_wl_features(train_data, test_data, 'standard', 1)
     elif features_type == 'wl-2':
         return compute_wl_features(train_data, test_data, 'standard', 2)
 
-    elif features_type == 'wln-0':
-        return compute_wl_features(train_data, test_data, 'node_features', 0)
     elif features_type == 'wln-1':
         return compute_wl_features(train_data, test_data, 'node_features', 1)
     elif features_type == 'wln-2':
         return compute_wl_features(train_data, test_data, 'node_features', 2)
 
-    elif features_type == 'wle-0':
-        return compute_wl_features(train_data, test_data, 'edge_features', 0)
     elif features_type == 'wle-1':
         return compute_wl_features(train_data, test_data, 'edge_features', 1)
     elif features_type == 'wle-2':
         return compute_wl_features(train_data, test_data, 'edge_features', 2)
 
-    elif features_type == 'wlne-0':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 0)
     elif features_type == 'wlne-1':
         return compute_wl_features(train_data, test_data, 'node_edge_features', 1)
     elif features_type == 'wlne-2':
         return compute_wl_features(train_data, test_data, 'node_edge_features', 2)
 
-    elif features_type == 'wlc-0':
-        return compute_custom_wl(train_data, test_data, 0)
     elif features_type == 'wlc-1':
         return compute_custom_wl(train_data, test_data, 1)
     elif features_type == 'wlc-2':
         return compute_custom_wl(train_data, test_data, 2)
+
+    elif features_type == 'wlce-1':
+        return compute_custom_wl(train_data, test_data, 1, True)
+    elif features_type == 'wlce-2':
+        return compute_custom_wl(train_data, test_data, 2, True)
 
     elif features_type == 'fzn2feat':
         return get_fzn2feat(train_data, test_data)
@@ -212,7 +213,7 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
     return train_data, test_data
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'])
 parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'f-knn', 'knn'])
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
@@ -221,9 +222,9 @@ parser.add_argument('--rnd-state', required=True, type=int)
 
 def main():
     args = parser.parse_args()
-    features_type:Literal['wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1',
-                          'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 
-                          'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
+    features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1',
+                          'wl-2', 'wln-1', 'wln-2', 
+                          'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
     model:str = args.model
     fold:int = args.cv_fold
     output_file:str = args.result
