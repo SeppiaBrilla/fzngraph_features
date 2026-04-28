@@ -1,22 +1,123 @@
 \section{Experimental Results}
-To test our methodology, we have implemented the graph conversion algorithm on top of the Flatzinc modelling language. We have then taken the instances from three Minizinc challenges (2023, 2024, and 2025), for a total of 300 instances and designed three different algorithm selection tasks around it: (i) algorithm selection based on the Borda count score on three solvers where the objective is to maximise the score, (ii) the same algorithm selection task but where the objective is to maximise the prediction accuracy and (iii) running a solver in its sequential and parallel version, we seek to predict if the parallel solver will meaningfully increase the performance with respect to the sequential version. The evaluation metrics will be predictive accuracy. 
 
-Each task will be compared against a baseline and the fzn2feat features: a feature set specifically designed for algorithm selection tasks for constraint programming. Due to the shallow depth of our graphs, we decided to test \texttt{WL}-based features with one or two aggregation steps.
+To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modeling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct three algorithm selection tasks: (i) maximizing the Borda count score across three solvers, (ii) maximizing prediction accuracy for the same solver set, and (iii) predicting whether a parallel solver execution provides a significant performance gain over its sequential counterpart.
 
-For each task, we trained three different ML models: (i) Support Vector Machine (SVM), (ii) Random Forest and (iii) a simple, three layer, multi-layer-perceptron (MLP). And the training process followed a four-steps pipeline:
+Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat} \cite{Amadini2014-fn}, a feature set specifically engineered for constraint programming algorithm selection. 
+
+Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps.
+
+For each task, we trained three models: a Support Vector Machine (SVM), a Random Forest, and a three-layer Multi-Layer Perceptron (MLP). The training pipeline followed a four-step protocol:
 \begin{enumerate}
-    \item Perform grid search on a predefined set of hyperparameter configurations and score each hyperparameter configuration based on the mean 5-fold cross-validation score.
-    \item Select the hyperparameter configuration with the best score. Ties are broken by selecting the hyperparameter configuration with the lowest chance of overfitting:
+    \item \textbf{Hyperparameter Optimization:} We performed a grid search over predefined configurations, evaluating each via mean 5-fold cross-validation.
+    \item \textbf{Model Selection:} We selected the highest-scoring configuration. Ties were broken by prioritizing simpler models to mitigate overfitting:
     \begin{itemize}
-        \item Lowest regularisation parameter, gamma and using the rbf kernel for SVM.
-        \item Smallest number of trees and depth for Random Forest.
-        \item Lowest number of training steps and smallest alpha for MLP.
+        \item For SVM: lower regularization ($C$) and $\gamma$ values, favoring the RBF kernel.
+        \item For Random Forest: fewer trees and shallower maximum depth.
+        \item For MLP: fewer training steps and a smaller $\alpha$ penalty.
     \end{itemize}
-    \item Test the performance of the best configuration on a range of smaller features set obtained by applying PCA decomposition on the original features set. The tested values are in the range $[20, \min(\text{n\_features},\text{n\_training-datapoints})[$.
-    \item Select the feature set with the highest score between those obtained by applying PCA decomposition and the original one.
+    \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA). Components were tested in the range $[20, \min(\text{n\_features}, \text{n\_samples})]$ with a step size of 20.
+    \item \textbf{Final Feature Selection:} The feature set (original or PCA-transformed) yielding the highest cross-validation score was selected for final evaluation.
 \end{enumerate}
 
-\subsection{Borda Count Score Maximisation}
-In this task, we compared three sequential solvers on the 300 instances. The solvers were run without forcing them to follow the search annotations on a very old CPU (fill in) for a total of 20 minutes. On each instance, solvers have been scored based on the same borda count scoring strategy followed by the Minizinc challenge.\footnote{https://www.minizinc.org/challenge/2025/} 
-The task has been modeled as a classification task where the prediction label corresponded to the solver with the highest score. Ties have been broken by assigning the label to the solver with the highest overall score. 
-The three solver we selected are \texttt{Or-Tools}, \texttt{Chuffed} and \texttt{Cplex}. From the final dataset, we removed one instance which was trivially unsat (and from which it was impossible to extract features) and all instances where no solver ever found a solution. In the end, the final dataset was composed of 289 instances. We performed 5-fold cross-validation using a stratify strategy repeating the split 10 times with different random seeds for a total of 50 test. The train-test split was performed using Scikit-learn StratifiedKFold function\footnote{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html} where the stratification was performed on the gap between the virtual best score (the maximum theoretical score obtainable) and the worse possible score. 
+\subsection{Borda Count Score Maximization}\label{sec:borda-cout}
+In this task, we compare three sequential solvers: \texttt{OR-Tools} \cite{or-tools}, \texttt{Chuffed} \cite{chuffed}, and \texttt{CPLEX} \cite{Nickel2022-eb} on 300 instances. Solvers were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout. Scores were assigned based on the Borda count strategy used in the MiniZinc Challenge.\footnote{\url{https://www.minizinc.org/challenge/2025/}} We framed this as a classification problem where the target label is the solver achieving the highest score. 
+
+We excluded one trivially unsatisfiable instance from which features could not be extracted, as well as instances where no solver reached a solution. The final dataset comprised 289 instances. Evaluation consisted of 10 repetitions of 5-fold cross-validation (50 total trials). We employed \texttt{StratifiedKFold} from Scikit-learn\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html}}, stratifying based on the performance gap between the Virtual Best Solver (VBS) and the worst-performing solver in the portfolio.
+
+\begin{figure}[h]
+    \begin{minipage}{0.49\linewidth}
+        \centering
+        \noindent
+        \includegraphics[width=\linewidth]{figures/wl_score_svc.pdf}
+    \end{minipage}
+    \begin{minipage}{0.49\linewidth}
+        \centering
+        \noindent
+        \vspace{-2.6\baselineskip} % Adjust this value as needed
+        \resizebox{\linewidth}{!}{%
+            \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+                \cline{0-12}
+                & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-1 & wlc-2 & wlce-1 & wlce-2 \\
+                \cline{0-12}
+                wl-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wl-2 & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wle-1 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wle-2 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wln-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wln-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wlne-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wlne-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+                wlc-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} \\
+                wlc-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} \\
+                wlce-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} \\
+                wlce-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} \\
+                \cline{0-12}
+            \end{tabular}%
+        }
+    \end{minipage}
+    \caption{Performance results for SVM models trained on \texttt{WL}-based features for the Borda count maximization task. Scores (left) are normalized as $S_{norm} = \frac{S - S_{sbs}}{S_{vbs} - S_{sbs}}$, where $S$ is the model score, $S_{sbs}$ is the Single Best Solver, and $S_{vbs}$ is the Virtual Best Solver. The statistical significance table (right) indicates results compared to the baseline using a Wilcoxon signed-rank test ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance ($p < 0.05$), \textcolor{ForestGreen}{\checkmark} denotes significantly better performance ($p < 0.05$), and \textbf{--} indicates no statistically significant difference.}
+    \label{fig:svc-wlc-scores}
+\end{figure}
+
+Figure \ref{fig:svc-wlc-scores} illustrates the performance of SVM models trained on \texttt{WL}-based features. While all feature sets generally outperformed the baseline, incorporating node information (\texttt{WLn}) yielded a significant performance increase over standard \texttt{WL} features. Conversely, edge information (\texttt{WLe}) provided no substantial predictive signal. Combining node and edge attributes (\texttt{WLne}) did not further improve results beyond the node-only baseline. 
+
+Notably, features derived from the cut-based representation (\texttt{WLc} and \texttt{WLce}) significantly outperformed all other variants. The number of aggregation steps had negligible impact on final performance across all feature sets. Although \texttt{WLc-1} was the only configuration to consistently exceed the baseline ($> 1$), the performance differences between various cut-based features were not statistically significant, likely due to high variance inherent in the task. Finally, Figure \ref{fig:svc-wlc-fzn2feat-scores} demonstrates that all cut-based models statistically outperformed the \texttt{fzn2feat} baseline.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=.6\linewidth]{figures/wl-fzn2feat_score_svc.pdf}
+    \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against the \texttt{fzn2feat} baseline for the Borda count maximization task for SMV models. Scores are normalized relative to the Single Best Solver and Virtual Best Solver. Statistical significance was determined via a Wilcoxon signed-rank test; all cut-based variants outperformed \texttt{fzn2feat} with $p < 0.05$.}
+    \label{fig:svc-wlc-fzn2feat-scores}
+\end{figure}
+
+
+Since Random Forest and MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features, we provide their comprehensive comparisons in the Appendix. We will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models.
+
+\begin{figure}[h]
+    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_score_forest.pdf}
+    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_score_nn.pdf}
+    \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against the \texttt{fzn2feat} baseline for the Borda count maximization task. Scores are normalized relative to the Single Best Solver and Virtual Best Solver. Results on the left are obtained by training Random Forest models while those on the right are obtained by training MLPs.}
+    \label{fig:forest-nn-wlc-fzn2feat-scores}
+\end{figure}
+
+Figure \ref{fig:forest-nn-wlc-fzn2feat-scores} illustrates the comparative performance of Random Forest and MLP models. For the Random Forest, \texttt{fzn2feat} achieves marginally higher scores than the cut-based features with the exception of \texttt{WLce-2} which still presents slightly higher mean and median scores, though these differences are not statistically significant ($p > 0.5$). In the MLP evaluation, only \texttt{WLc-2} significantly outperforms \texttt{fzn2feat} ($p = 0.04$), while the improvement for \texttt{WLc-1} is marginal and falls outside the significance threshold ($p = 0.054$). 
+
+Finally, we conducted a cross-model comparison between the best-performing \texttt{fzn2feat} configuration (Random Forest) and the best cut-based configuration (SVM). No statistically significant difference was observed, with the lowest recorded $p$-value being $0.33$. However, it is noteworthy that all cut-based feature sets yielded higher mean and median scores than \texttt{fzn2feat} across these comparisons.
+
+Finally, it is noteworthy to point out that we deliberately decided to exclude the feature extraction cost from the results since our current implementation of the feature extraction isn't well optimised and its performance are sub-optimal. A more detailed discussion about it can be found in Section \ref{MISSING}
+
+\subsection{Algorithm Selection with Accuracy Maximisation}
+The setup for this task was the same as for the borda count maximisation one (in Section \ref{sec:borda-cout}) with the only difference being the objective of the task which changes from maximising the score of the portfolio to maximising predictive accuracy. This change will allow us to use different statistical tests such as the Mcnemar test \cite{Smith2020-cb}. In this task, the baseline to beat is the majority classifier which always predicts the most frequent label.
+
+
+The experimental configuration for this task mirrors the Borda count maximization setup (Section \ref{sec:borda-cout}), with the objective shifted to maximizing predictive accuracy. This shift allows for the application of additional statistical evaluations, specifically the McNemar test \cite{Smith2020-cb}, to assess the significance of differences in classifier performance. In this context, the baseline for comparison is the ZeroR (majority) classifier, which consistently predicts the most frequent class label in the training set.
+
+\begin{figure}[h]
+    \centering
+    \begin{minipage}[!t]{0.49\linewidth}
+        \centering
+        \includegraphics[width=\linewidth]{figures/wl_accuracy_svc.pdf}
+    \end{minipage}%
+    \begin{minipage}[!t]{0.49\linewidth}
+        \centering
+        \vspace{-1.9\baselineskip} % Adjust this value as needed
+        \includegraphics[width=\linewidth]{figures/wl-fzn2feat_accuracy_svc.pdf}
+    \end{minipage}
+    \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based features (Left). Statistical significance relative to the majority classifier baseline is determined via Wilcoxon signed-rank and McNemar tests ($\alpha = 0.05$). And comparative accuracy of SVM models trained on cut-based features versus \texttt{fzn2feat} (Right). Significance was evaluated using McNemar and Wilcoxon signed-rank tests ($p < 0.01$).}
+    \label{fig:svc-accuracy}
+\end{figure}
+
+Consistent with the observations in Section \ref{sec:borda-cout}, the comparisons of \texttt{WL}-based features for SVM models (Figure \ref{fig:svc-accuracy}, right) indicate that cut-based features significantly outperform alternative variants. However, for the accuracy maximization task, the marginal benefit of incorporating node information is less pronounced than in the Borda count task. Regardless, all feature configurations demonstrate a statistically significant improvement over the majority classifier baseline.
+
+When compared against the \texttt{fzn2feat} baseline (Figure \ref{fig:svc-accuracy}, left), cut-based features exhibit significantly higher accuracy. This performance gain is confirmed by both McNemar and Wilcoxon signed-rank tests, with $p$-values below $0.01$. Conversely, inter-model comparisons between the various cut-based feature sets do not yield statistically significant differences.
+
+\begin{figure}
+    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_accuracy_forest.pdf}
+    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_accuracy_nn.pdf}
+    \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against \texttt{fzn2feat}. Results on the left are obtained by training Random Forest models while those on the right are obtained by training MLPs.}
+    \label{fig:forest-nn-wlc-fzn2feat-accuracy}
+\end{figure}
+
+Figure \ref{fig:forest-nn-wlc-fzn2feat-accuracy} shows the performance of Random Forest and MLP-based classifiers trained with cut-based and \texttt{fzn2feat} features. While \texttt{fzn2feat} features perform slightly better on the Random Forest classifier, in no case there is statistical significance both with McNemar and Wilcoxon signed-rank tests.
+
+When comparing the best \texttt{fzn2feat} classifier with the best cut-based ones, both \texttt{WLc-1} and \texttt{WLc-2}-based models are significantly better using the McNemar test while only the \texttt{WLc-1}-based model is better using the Wilcoxon signed-rank tests.

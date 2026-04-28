@@ -5,9 +5,10 @@ data/graphs
 *.aux
 *.bbl
 *.blg
-*.dfb_latexmk
+*.fdb_latexmk
 *.fls
 *.log
 paper/*.out
 *.synctex.gz
 *.vtc
+main.pdf
