@@ -36,29 +36,6 @@ def get_as_results(result_folder:str) -> dict[str,dict[str, float]]:
         as_results[feature_names][fold] = (content['clf_score'] - content['cp-sat_score']) / (content['vbs_score'] - content['cp-sat_score'])
     return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
 
-def get_parallel_results(result_folder):
-    '''
-    Function to load parallel results from a specific folder.
-    '''
-    as_results = {}
-    for file in os.listdir(result_folder):
-        if not file.startswith("parallelise_"):
-            continue
-        if 'forest' in file:
-            name_split = file.replace("parallelise_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
-        elif 'svc' in file:
-            name_split = file.replace("parallelise_", "").replace("-svc", "").replace(".json", "").split("-")
-        elif 'nn' in file:
-            name_split = file.replace("parallelise_", "").replace("-nn", "").replace(".json", "").split("-")
-        fold = name_split[-1]
-        feature_names = "-".join(name_split[:-1])
-        with open(os.path.join(result_folder, file)) as f:
-            content = json.load(f)
-        if feature_names not in as_results:
-            as_results[feature_names] = {}
-        as_results[feature_names][fold] = content['accuracy']
-    return {k:v for k,v in sorted(as_results.items(), key= lambda x: (order[x[0].replace('-max', '').replace('-min', '')], 0 if '-min' in x[0] else 1))}
-
 def to_table(data, wsbs=True):
     '''
     transforms data loaded from a folder to a table. It works also if results from different folders are merged together
@@ -78,7 +55,7 @@ def to_table(data, wsbs=True):
     return df[['Mean', 'Median', 'Std', 'Max', 'Min'] + (['Worse_sbs'] if wsbs else [])]
 
 def get_as_accuracy_results(result_folder):
-    as_results = {}
+    as_results = {'majority_classifier': {}}
     for file in os.listdir(result_folder):
         if not file.startswith("as-accuracy_"):
             continue
@@ -99,6 +76,10 @@ def get_as_accuracy_results(result_folder):
         if feature_names not in as_results:
             as_results[feature_names] = {}
         as_results[feature_names][fold] = content['accuracy']
+        if 'fzn2feat' in file:
+            as_results['majority_classifier'][fold] = accuracy_score(
+                [p['true'] for p in content['predictions'].values()], 
+                [0 for _ in content['predictions']])
     return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
 
 def combine_algorithm_selection_score(result_1:str, result_2:str, dataset:str, result_3:str|None=None) -> float:
@@ -219,6 +200,158 @@ def compare_as_accuracy_results(comb1:tuple[str, str], comb2:tuple[str, str], ba
         for k, v in content['predictions'].items():
             assert res[seed][k]['true'] == v['true']
             res[seed][k][features2] = v['pred']
+
+    c1 = []
+    c2 = []
+    trues = []
+    comparison_dicts = []
+
+    # Reshape the results to be in line with the format required by the functions
+    for v in res.values():
+        for preds in v.values():
+            trues.append(preds['true'])
+            c1.append(preds[features1])
+            c2.append(preds[features2])
+
+            comparison_dicts.append({'p1': preds[features1], 'p2': preds[features2], 'true': preds['true']})
+    
+    return accuracy_score(trues, c1), accuracy_score(trues, c2), compute_mcnemar(comparison_dicts)
+
+def get_parallel_results(result_folder):
+    as_results = {}
+    for file in os.listdir(result_folder):
+        if not file.startswith("par_"):
+            continue
+        # if not "123" in file:
+        #     continue
+        if 'forest' in file:
+            name_split = file.replace("par_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
+        elif 'svc' in file:
+            name_split = file.replace("par_", "").replace("-svc", "").replace(".json", "").split("-")
+        elif 'nn' in file:
+            name_split = file.replace("par_", "").replace("-nn", "").replace(".json", "").split("-")
+        fold = "-".join(name_split[-2:])
+        feature_names = "-".join(name_split[:-2])
+        # print(name_split, fold, feature_names)
+        with open(os.path.join(result_folder, file)) as f:
+            content = json.load(f)
+        if feature_names not in as_results:
+            as_results[feature_names] = {}
+        as_results[feature_names][fold] = content['accuracy']
+    feature_names = 'majority_classifier'
+    as_results[feature_names] = {}
+    for file in os.listdir(result_folder):
+        if not file.startswith("par_"):
+            continue
+        if not "fzn2feat" in file:
+            continue
+        if 'forest' in file:
+            name_split = file.replace("par_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
+        elif 'svc' in file:
+            name_split = file.replace("par_", "").replace("-svc", "").replace(".json", "").split("-")
+        elif 'nn' in file:
+            name_split = file.replace("par_", "").replace("-nn", "").replace(".json", "").split("-")
+        fold = "-".join(name_split[-2:])
+        with open(os.path.join(result_folder, file)) as f:
+            content = json.load(f)
+        trues = [v['true'] for v in content['predictions'].values()]
+        pred = [1 for _ in content['predictions'].values()]
+        as_results[feature_names][fold] = accuracy_score(trues, pred)
+    return {k:v for k,v in sorted(as_results.items(), key= lambda x: (order[x[0].replace('-max', '').replace('-min', '')], 0 if '-min' in x[0] else 1))}
+
+
+def compare_par_results(comb1:tuple[str, str], comb2:tuple[str, str], base_folder:str) -> tuple[float, float, float]:
+    '''
+    Given two combinations of (features, model) compares their result using the mcnemar P value and returns the total accuracy of each combination
+    '''
+    features1, model1 = comb1
+    res = {}
+    if features1 == 'majority_classifier':
+        folder = os.path.join(base_folder, f"svc-parallelise")
+        for file in os.listdir(folder):
+            with open(os.path.join(folder, file)) as f:
+                content = json.load(f)
+            split = file.replace("par_","").replace(".json", "").split('-')
+            seed = split[-1]
+            fold = split[-2]
+            files_features = split[0] if split[0] == 'fzn2feat' else f'{split[0]}-{split[1]}'
+
+            # If the file does not correspond to the features we are looking for, we skip it.
+            if 'fzn2feat' != files_features:
+                continue
+
+            # Load all predictions and create the key-value pairs into the results dict if the don't exist 
+            for k, v in content['predictions'].items():
+                if not seed in res:
+                    res[seed] = {}
+                if not k in res[seed]:
+                    res[seed][k] = {'true': v['true']}
+                res[seed][k][features1] = 1
+    else:
+        folder = os.path.join(base_folder, f"{model1}-parallelise")
+
+        # Load results for the first combination
+        for file in os.listdir(folder):
+            with open(os.path.join(folder, file)) as f:
+                content = json.load(f)
+            split = file.replace("par_","").replace(".json", "").split('-')
+            seed = split[-1]
+            fold = split[-2]
+            files_features = split[0] if split[0] == 'fzn2feat' else f'{split[0]}-{split[1]}'
+
+            # If the file does not correspond to the features we are looking for, we skip it.
+            if features1 != files_features:
+                continue
+
+            # Load all predictions and create the key-value pairs into the results dict if the don't exist 
+            for k, v in content['predictions'].items():
+                if not seed in res:
+                    res[seed] = {}
+                if not k in res[seed]:
+                    res[seed][k] = {'true': v['true']}
+                res[seed][k][features1] = v['pred']
+    
+    features2, model2 = comb2
+    folder = os.path.join(base_folder, f"{model2}-parallelise")
+    if features2 == 'majority_classifier':
+        folder = os.path.join(base_folder, f"svc-parallelise")
+        for file in os.listdir(folder):
+            with open(os.path.join(folder, file)) as f:
+                content = json.load(f)
+            split = file.replace("par_","").replace(".json", "").split('-')
+            seed = split[-1]
+            fold = split[-2]
+            files_features = split[0] if split[0] == 'fzn2feat' else f'{split[0]}-{split[1]}'
+
+            # If the file does not correspond to the features we are looking for, we skip it.
+            if 'fzn2feat' != files_features:
+                continue
+
+            # Load all predictions and create the key-value pairs into the results dict if the don't exist 
+            for k, v in content['predictions'].items():
+                if not seed in res:
+                    res[seed] = {}
+                if not k in res[seed]:
+                    res[seed][k] = {'true': v['true']}
+                res[seed][k][features2] = 1
+    else:
+        # Load results for the second combination
+        for file in os.listdir(folder):
+            with open(os.path.join(folder, file)) as f:
+                content = json.load(f)
+            split = file.replace("par_","").replace(".json", "").split('-')
+            seed = split[-1]
+            fold = split[-2]
+            files_features = split[0] if split[0] == 'fzn2feat' else f'{split[0]}-{split[1]}'
+
+            # If the file does not correspond to the features we are looking for, we skip it.
+            if features2 != files_features:
+                continue
+
+            # Load all predictions and check they correspond
+            for k, v in content['predictions'].items():
+                assert res[seed][k]['true'] == v['true']
+                res[seed][k][features2] = v['pred']
 
     c1 = []
     c2 = []

@@ -8,22 +8,28 @@ It is important to note that the WL algorithm does not guarantee correctness, an
 
 It is also possible to generalise the Wl algorithm to the $k$-WL algorithm where the colours are assigned to a $k$-tuple of nodes. In this sense, the standard WL algorithm is a special case of the $k$-WL algorithm where $k=1$. At the growth of $k$, the $k$-WL algorithm gets much more powerful in distinguishing non-isomorphic graphs; however, its complexity also grows exponentially in $k$. Thus, for the purpose of this paper, we will only focus on the standard WL algorithm.
 
-
-\subsection{WL For Feature Extraction}
-To use the WL algorithm for feature extraction, we repeat the colour refinement process for a pre-defined number of steps on a single graph, then we extract features by creating a histogram where, for each colour, we count its occurrences in the graph. A depiction of the execution of the WL algorithm for feature extraction (with one aggregation step) can be seen in Figure \ref{fig:wl-feature-exec}. The WL features have been proven effective in many fields such as cheminformatics and computer vision. For a comprehensive review of the WL features for ML, we will refer to Morris et al. \cite{morris2023weisfeiler}.
-
 \begin{figure}[t]
-    \includegraphics[width=\textwidth]{figures/wl.drawio.pdf}
+    \centering
+    \includegraphics[width=.9\textwidth]{figures/wl.drawio.pdf}
     \caption{Feature extraction process using the WL algorithm on a simple, undirected graph. The colour refinement is executed only once. At first, all nodes get the same colour, then node A aggregates its colour (blue) with its 3 neighbours' colours (blue), getting, as a result, (blue, blue,blue,blue). This produces a new colour, red. C and D, having only two neighbours, get, as aggregation (blue, blue,blue), resulting in the new colour yellow and, finally, node B, having only one neighbour, aggregates to (blue, blue), getting as new colour orange. In the final steps, we count the number of occurrences of each colour, and we get 1 red, 1 orange and 2 yellow.}
     \label{fig:wl-feature-exec}
 \end{figure}
 
+
+\subsection{WL For Feature Extraction}
+To use the WL algorithm for feature extraction, we repeat the colour refinement process for a pre-defined number of steps on a single graph, then we extract features by creating a histogram where, for each colour, we count its occurrences in the graph. Then, the final feature vector is created by concatenating the histograms after each iteration. A depiction of the execution of the WL algorithm for feature extraction (with one aggregation step) can be seen in Figure \ref{fig:wl-feature-exec}. The WL features have been proven effective in many fields such as cheminformatics and computer vision. For a comprehensive review of the WL features for ML, we will refer to Morris et al. \cite{morris2023weisfeiler}.
+
+Note that while the standard \texttt{WL} feature extraction process typically concatenates histograms from all iterations, we deliberately utilize only the final histogram. This approach is necessitated by the scale of the graphs extracted from constraint instances; even after preprocessing, the number of unique colors often reaches the thousands. Concatenating these would yield extremely high-dimensional feature vectors, potentially degrading the performance of downstream ML models due to the curse of dimensionality.
+
+Furthermore, as established in the analysis of Graph Isomorphism Networks (GIN) \cite{Xu2018}, the final iteration of a WL-style message-passing scheme theoretically encodes the comprehensive subtree structure. Although \cite{Xuetal2018} focuses on neural architectures, the underlying principle holds for discrete \texttt{WL} features and the final labels represent the most refined partition of nodes, implicitly encapsulating the structural information from preceding iterations. Consequently, in the remainder of this work, \texttt{WL} features refer exclusively to the histogram extracted at the final aggregation step. A comprehensive evaluation of concatenated feature vectors remains a subject for future research.
+
 \subsection{Enhancing Features' Expressiveness}
-The standard WL features are designed for graphs without any edge or node information. However, in our case, we have both node and edge-level information we can use to better represent the input graph. For this reason, we propose two extensions to the base algorithm:
+The standard WL features are designed for graphs without any edge or node information. However, in our case, we have both node and edge-level information we can use to better represent the input graph. For this reason, we include two extensions to the base algorithm:
 \begin{itemize}
     \item \textbf{Node-information extension}: To add node information into the extraction process, we can initialise the node colour with the hash of its type + subtype (e.g. a \texttt{Variable node} and a \texttt{Sum node} will be initialised with different colours). Formally, $c^{(0)}(v) \leftarrow \text{HASH}(\text{type}(v) \ || \ \text{subtype}(v))$ where $||$ denotes string concatenation.
     \item \textbf{Edge-information extension}: To add edge information into the extraction process, we can concatenate the edge type to the node colour during the aggregation step (e.g. in the example of Figure \ref{fig:wl-feature-exec}, if Node B was connected to node A via a type-0 edge, the aggregation of node B would be: (blue, blue-0)). Formally, assuming a directed graph where edges flow towards $v$, its multiset update becomes $M(v) \leftarrow \{\!\!\{c^{(t-1)}(w) \ || \ \text{type}(w, v) \mid (w,v) \in E\}\!\!\!\}$.
 \end{itemize}
+These extensions are standard have have been proposed in a similar manner in previous works such as \cite{Togninalli2019-qa}.
 Finally, we can use the fact that our graphs are directed and only update a node colour based on its incoming neighbours.
 
 Using these extensions, we can now define four types of features: (i) \texttt{WL}, standard WL features without node or edge information, (ii) \texttt{WLn}, WL features enhanced via node-information extensions, (iii) \texttt{WLe},  WL features enhanced via edge-information extensions, and (iv) \texttt{WLne}, WL features enhanced with both edge and node-information. 
@@ -40,6 +46,7 @@ At this stage, we can correctly capture the fact that two constraints with the s
 The cut trick can only be applied when node information is present, thus, only to \texttt{WLn} and \texttt{WLne} features. We will call the features where the cut trick is applied \texttt{WLc} if only the cut is applied to \texttt{WLn} features and \texttt{WLce} if the cut is applied to \texttt{WLne} features. A formalisation of the \texttt{WLc} features can be seen in Algorithm \ref{alg:wl-cut}, and a graphical depiction of how the cut trick is applied can be seen in Figure \ref{fig:cut-trick}.
 
 \begin{algorithm}[ht]
+\scriptsize
 \caption{\texttt{WLc} Algorithm for Feature Extraction. The \texttt{WLce} version will be different only in the aggregation step where also the edge information will be included.}
 \label{alg:wl-cut}
 \begin{algorithmic}[1]
@@ -70,7 +77,8 @@ The cut trick can only be applied when node information is present, thus, only t
 \end{algorithm}
 
 \begin{figure}[t]
-    \includegraphics[width=\linewidth]{figures/wlc.drawio}
+    \centering
+    \includegraphics[width=.9\linewidth]{figures/wlc.drawio}
     \caption{Application of the cut trick on two occurrences of the \texttt{all\_different} constraint (top and bottom). Constraint nodes are in purple, variable nodes in yellow and parameter nodes in blue. First, we ignore colours from nodes with incoming edges (1), then we generate all pairs and update the colour of the \texttt{all\_different} node by aggregating it with the set of all pairs (2) and then we generate the pairs histogram by counting all the occurrences of the pairs (3). In this example, since both constraints share the same type of incoming nodes, they will be coloured in the same way. However, having a different node degree will result in a different pair histogram.}
     \label{fig:cut-trick}
 \end{figure}
@@ -83,6 +91,8 @@ To give some extra information about variables and parameters in the graph, besi
 For similar reasons, most paths in the graph are quite shallow, especially after the cut. As an example, in the \texttt{x + 3 = y} constraint, we will have 2 variable nodes, (\texttt{x, y}), one parameter node (\texttt{3}), one operator node (\texttt{+}) and one constraint node (\texttt{=}). The operator node can be updated only once since the values of the parameter and variable nodes connected to it will never get updated. At the same time, the value of the constraint node can be updated at most twice: once at the first step when it aggregates with the original \texttt{+} and \texttt{y} colours and once at the second step when it aggregates with the updated \texttt{+} colour and the original, unmodified \texttt{y} colour. 
 
 Global constraints are always terminal nodes without any outgoing nodes; thus, as a consequence, updating them only once, at the end of the standard WL steps, will result in the same output as updating them during the standard WL steps.
+
+
 
 Finally, once the final histograms are extracted from the graphs, we need to normalise the features. This is a necessary step since the values in the histograms will grow proportionally to the size of the graph. Thus, if not normalised, the produced histograms will be comparable only with those produced by graphs of the same size, making it impossible to generalise.
 
