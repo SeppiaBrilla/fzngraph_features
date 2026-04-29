@@ -74,7 +74,7 @@ def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[
         t['features'] = np.array(np.delete(t['features'], idxs).tolist() + [np.sum(np.array(t['features'])[idxs])])
     return train_data, test_data
 
-def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int) -> tuple[list[dict],list[dict]]:
+def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int, all_levels:bool) -> tuple[list[dict],list[dict]]:
     colors = {}
     MAX_COLORS = None
 
@@ -87,23 +87,39 @@ def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Lit
     colors_names = set(sorted(set(int(c) for c in colors.values())))
     for t in train_data:
         res = t['features']
-        counter = Counter(res)
-        n = len(res)
-        features = [counter.get(color, 0) / n for color in colors_names]
+        if all_levels:
+            features = []
+            for r in res:
+                counter = Counter(r)
+                n = len(r)
+                features.extend([counter.get(color, 0) / n for color in colors_names])
+        else:
+            r = res[-1]
+            counter = Counter(r)
+            n = len(r)
+            features = [counter.get(color, 0) / n for color in colors_names]
         t['features'] = features
 
     for t in tqdm(test_data, desc='test data'):
         with open(t['graph']) as f:
             g = load_graph(f)
         res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=False, max_colors=MAX_COLORS, with_neighbours=False)
-        counter = Counter(res)
-        n = len(res)
-        features = [counter.get(color, 0) / n for color in colors_names]
+        if all_levels:
+            features = []
+            for r in res:
+                counter = Counter(r)
+                n = len(r)
+                features.extend([counter.get(color, 0) / n for color in colors_names])
+        else:
+            r = res[-1]
+            counter = Counter(r)
+            n = len(r)
+            features = [counter.get(color, 0) / n for color in colors_names]
         t['features'] = features
 
     return prune(train_data, test_data)
 
-def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool) -> tuple[list[dict],list[dict]]:
+def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool, all_levels:bool) -> tuple[list[dict],list[dict]]:
     colors = {}
 
     g_pairs = set()
@@ -124,8 +140,16 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int,
     colors_names = set(sorted(set(int(c) for c in colors.values())))
     for t in train_data:
         res = t['features']
-        counter = Counter(res)
-        features = np.array([counter.get(color, 0) / t['extra']['n_nodes'] for color in colors_names])
+        if all_levels:
+            features = []
+            for r in res:
+                counter = Counter(r)
+                features.extend([counter.get(color, 0) / t['extra']['n_nodes'] for color in colors_names])
+            features = np.array(features)
+        else:
+            r = res[-1]
+            counter = Counter(r)
+            features = np.array([counter.get(color, 0) / t['extra']['n_nodes'] for color in colors_names])
         tot_pairs = max(sum(t['extra']['globals_pairs'].values()), 1)
         t['features'] = features.tolist() + [t['extra']['globals_pairs'].get(p,0)/tot_pairs for p in g_pairs] + [t['extra']['cpv'], t['extra']['cpp']]
 
@@ -136,8 +160,18 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int,
             res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=False)
         else:
             res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
-        counter = Counter(res)
-        features = np.array([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
+        
+        if all_levels:
+            features = []
+            for r in res:
+                counter = Counter(r)
+                features.extend([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
+            features = np.array(features)
+        else:
+            r = res[-1]
+            counter = Counter(r)
+            features = np.array([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
+            
         tot_pairs = max(sum(extra['globals_pairs'].values()), 1)
         t['features'] = features.tolist() + [extra['globals_pairs'].get(p,0)/tot_pairs for p in g_pairs] + [extra['cpv'], extra['cpp']]
 
@@ -162,41 +196,42 @@ def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict
 def get_features(
         train_data:list[dict],
         test_data:list[dict],
-        features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat']
+        features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'],
+        all_levels:bool=False
     ) -> tuple[list[dict], list[dict]]:
     '''
     for each feature-type returns the modified train and dataset agumented with the corresponding features
     '''
 
     if features_type == 'wl-1':
-        return compute_wl_features(train_data, test_data, 'standard', 1)
+        return compute_wl_features(train_data, test_data, 'standard', 1, all_levels)
     elif features_type == 'wl-2':
-        return compute_wl_features(train_data, test_data, 'standard', 2)
+        return compute_wl_features(train_data, test_data, 'standard', 2, all_levels)
 
     elif features_type == 'wln-1':
-        return compute_wl_features(train_data, test_data, 'node_features', 1)
+        return compute_wl_features(train_data, test_data, 'node_features', 1, all_levels)
     elif features_type == 'wln-2':
-        return compute_wl_features(train_data, test_data, 'node_features', 2)
+        return compute_wl_features(train_data, test_data, 'node_features', 2, all_levels)
 
     elif features_type == 'wle-1':
-        return compute_wl_features(train_data, test_data, 'edge_features', 1)
+        return compute_wl_features(train_data, test_data, 'edge_features', 1, all_levels)
     elif features_type == 'wle-2':
-        return compute_wl_features(train_data, test_data, 'edge_features', 2)
+        return compute_wl_features(train_data, test_data, 'edge_features', 2, all_levels)
 
     elif features_type == 'wlne-1':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 1)
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 1, all_levels)
     elif features_type == 'wlne-2':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 2)
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 2, all_levels)
 
     elif features_type == 'wlc-1':
-        return compute_custom_wl(train_data, test_data, 1)
+        return compute_custom_wl(train_data, test_data, 1, False, all_levels)
     elif features_type == 'wlc-2':
-        return compute_custom_wl(train_data, test_data, 2)
+        return compute_custom_wl(train_data, test_data, 2, False, all_levels)
 
     elif features_type == 'wlce-1':
-        return compute_custom_wl(train_data, test_data, 1, True)
+        return compute_custom_wl(train_data, test_data, 1, True, all_levels)
     elif features_type == 'wlce-2':
-        return compute_custom_wl(train_data, test_data, 2, True)
+        return compute_custom_wl(train_data, test_data, 2, True, all_levels)
 
     elif features_type == 'fzn2feat':
         return get_fzn2feat(train_data, test_data)
@@ -219,6 +254,7 @@ parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
 parser.add_argument('--rnd-state', required=True, type=int)
+parser.add_argument('--all-levels', action='store_true', help='Use a concatenation of all aggregation levels instead of only the last one')
 
 def main():
     args = parser.parse_args()
@@ -230,6 +266,7 @@ def main():
     output_file:str = args.result
     max_cv:int = args.max_cv
     rnd_state:int = args.rnd_state
+    all_levels:bool = args.all_levels
     # train_time:None|int = args.train_time
 
     data = load_data()
@@ -243,7 +280,7 @@ def main():
     train_data, test_data = data_to_list(train_data), data_to_list(test_data)
 
     #data preparation, decide features type and pruning
-    train_data, test_data = get_features(train_data, test_data, features_type)
+    train_data, test_data = get_features(train_data, test_data, features_type, all_levels)
     print('computed features, starting to train model')
 
     if model == 'rnd-forest':

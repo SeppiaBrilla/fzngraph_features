@@ -5,6 +5,7 @@ parser.add_argument('-e', '--experiment', type=str, choices=['as', 'as-acc', 'pa
 parser.add_argument('-f', '--features', type=str, choices=['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wlcc', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'], required=True)
 parser.add_argument('-m', '--model', type=str, choices=['svc', 'rnd-forest', 'nn', 'f-knn', 'knn'], required=True)
 parser.add_argument('-b', '--base-name', required=True)
+parser.add_argument('--all-levels', action='store_true', help='use all WL levels')
 
 args = parser.parse_args()
 
@@ -13,6 +14,8 @@ rnd_seeds = [7, 12, 42, 72, 123, 156, 197, 205, 224, 242]
 
 if args.experiment == 'as':
     command = f'PYTHONHASHSEED=42 python src/algorithm_selection/algorithm_selection.py -f {args.features} -m {args.model}'
+    if args.all_levels:
+        command += ' --all-levels'
     for seed in rnd_seeds:
         for cv in range(max_cv):
             result:str = args.base_name
@@ -28,6 +31,8 @@ if args.experiment == 'as':
 
 elif args.experiment == 'as-acc':
     command = f'PYTHONHASHSEED=42 python src/algorithm_selection_accuracy/algorithm_selection_accuracy.py -f {args.features} -m {args.model}'
+    if args.all_levels:
+        command += ' --all-levels'
     for seed in rnd_seeds:
         for cv in range(max_cv):
             result:str = args.base_name
@@ -43,6 +48,8 @@ elif args.experiment == 'as-acc':
 
 elif args.experiment == 'par':
     command = f'PYTHONHASHSEED=42 python src/parallelise/parallelise.py -f {args.features} -m {args.model}'
+    if args.all_levels:
+        command += ' --all-levels'
     for seed in rnd_seeds:
         for cv in range(max_cv):
             result:str = args.base_name
