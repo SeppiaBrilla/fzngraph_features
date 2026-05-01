@@ -1,1 +1,23 @@
 \section{Background}
+This section provides the theoretical foundation for this work while excluding Graph-based representations of constraint problems as we will discuss them in Section \ref{sec:conversion}.
+
+\subsection{Combinatorial Optimisation}
+Constraint Programming (CP) \cite{rossi2006handbook} is a paradigm for solving combinatorial optimization problems (COPs) by defining them via variables, domains, and constraints. Unlike other combinatorial solvers, CP utilizes global constraints (such as \textit{all-different}, \textit{cumulative}, or \textit{circuit}) which capture complex substructures. These constraints use specialized filtering algorithms to prune the search space through propagation, enabling more efficient modeling and solving.
+
+Constraint solvers navigate the solution space using techniques like constraint propagation \cite{bessiere2006constraint}, branch and bound \cite{boyd2007branch}, and conflict-driven clause learning (CDCL) \cite{marques2009conflict}. Given that COPs are often NP-hard \cite{Papadimitriou_book}, parallelization is frequently employed to speed up the computation. This typically follows two patterns: (i) the job-splitting approach, which parallelizes a single solver's strategy, and (ii) the portfolio approach, which runs multiple solvers with different strategies simultaneously \cite{paper_amai}. Comprehensive reviews for parallelizing these specific techniques are available in \cite{gent2018review, crainic2006parallel, martins2012overview}.
+
+\subsection{Algorithm Selection}
+Algorithm Selection (AS) involves identifying the most suitable algorithm for a specific problem instance to optimize metrics like computational efficiency or accuracy. This process is necessitated by the No Free Lunch theorem \cite{wolpert1997no}, which states that no single algorithm is universally superior. In the SAT domain, SATZilla \cite{xu2012satzilla2012} uses AS to manage solver portfolios. In CP, approaches like CPHydra \cite{bridge2012case} and SUNNY \cite{amadini2014sunny} utilize $k$-nearest neighbors (k-NN) to generate instance-specific solver schedules.
+
+\subsection{Feature Extraction on Graphs}
+Feature extraction transforms graph-structured data into fixed-dimensional vector spaces \cite{graphkernels}. Classic methods rely on graph-theoretical metrics to describe structural properties.
+
+Node-level features describe a node's topological importance. Common metrics include Degree Centrality, Clustering Coefficient \cite{watts1998collective}, and Betweenness or Closeness Centrality \cite{newman2010network}. Edge-level features are primarily used for link prediction and node proximity. These include Common Neighbors, the Jaccard Coefficient, the Adamic-Adar Index (which weights neighbors by their rarity) \cite{adamic2003friends}, and the Katz Index \cite{Luce_Perry_1949}.
+
+Graph-level features are often extracted via kernels that compute similarity as a scalar product between two graphs $G_1$ and $G_2$. 
+\begin{itemize}
+    \item \textbf{Weisfeiler-Lehman (WL) Kernel} \cite{shervashidze2011weisfeiler}: Iteratively relabels nodes based on neighbor signatures (see Section \ref{sec:wl}).
+    \item \textbf{Graphlet Kernel} \cite{graphkernels}: Counts small, non-isomorphic subgraphs.
+    \item \textbf{Random Walk Kernel} \cite{vishwanathan2010graph}: Compares graphs based on matching paths.
+\end{itemize}
+WL-based features are widely used in cheminformatics and computer vision \cite{young2022literature, simonovsky2017dynamic}  as well as in neighbour fields like planning \cite{chen2024return}. Furthermore, the message-passing mechanism in Graph Neural Networks is fundamentally inspired by the WL algorithm \cite{Xuetal2018, morris2023weisfeiler}.
