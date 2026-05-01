@@ -29,11 +29,11 @@ All figures group together features extracted with the same methodology but with
 \begin{figure}[t]
         \centering
         \noindent
-        \includegraphics[width=.8\linewidth]{figures/wl_score_svc.pdf}
+        \includegraphics[width=.7\linewidth]{figures/wl_score_svc.pdf}
         \centering
         \noindent
         % \vspace{-2.6\baselineskip} % Adjust this value as needed
-        \resizebox{.8\linewidth}{!}{%
+        \resizebox{.7\linewidth}{!}{%
             \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
                 \cline{0-13}
                 & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-1 & wlc-2 & wlce-1 & wlce-2 & fzn2feat \\
@@ -70,8 +70,9 @@ Notably, features derived from the cut-based representation (\texttt{WLc} and \t
 Since RF and MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features, we provide their comprehensive comparisons in the Appendix. We will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models.
 
 \begin{figure}[t]
-    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_score_forest.pdf}
-    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_score_nn.pdf}
+    \centering
+    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_forest.pdf}
+    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_nn.pdf}
     \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against the \texttt{fzn2feat} baseline for the Borda count maximization task. Scores are normalized relative to the Single Best Solver and Virtual Best Solver. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
     \label{fig:forest-nn-wlc-fzn2feat-scores}
 \end{figure}
@@ -80,17 +81,17 @@ Figure \ref{fig:forest-nn-wlc-fzn2feat-scores} illustrates the comparative perfo
 
 Finally, we conducted a cross-model comparison between the best-performing \texttt{fzn2feat} configuration (RF) and the best cut-based configuration (SVM). No statistically significant difference was observed, with the lowest recorded $p$-value being $0.33$. However, it is noteworthy that all cut-based feature sets yielded higher mean and median scores than \texttt{fzn2feat} across these comparisons but with limited effect size (Cohen's d\cite{Diener2010-rf} $<0.2$) indicates that the high variance inherent in solver performance on the MiniZinc Challenge instances remains a dominant factor.
 
-Finally, it is noteworthy to point out that we deliberately decided to exclude the feature extraction cost from the results since our current implementation of the feature extraction isn't well optimised and its performance are sub-optimal. A more detailed discussion about it can be found in Section \ref{MISSING}
+Finally, it is noteworthy to point out that we deliberately decided to exclude the feature extraction cost from the results since our current implementation of the feature extraction isn't well optimised and its performance are sub-optimal. A more detailed discussion about it can be found in Section \ref{sec:extraction-cost}.
 
 \subsection{Algorithm Selection with Accuracy Maximisation}
 The setup for this task was the same as for the borda count maximisation one (in Section \ref{sec:borda-cout}) with the only difference being the objective of the task which changes from maximising the score of the portfolio to maximising predictive accuracy. This change will allow us to use different statistical tests such as the Mcnemar test \cite{Smith2020-cb}. In this task, the baseline to beat is the majority classifier which always predicts the most frequent label.
 
 
-The experimental configuration for this task mirrors the Borda count maximization setup (Section \ref{sec:borda-cout}), with the objective shifted to maximizing predictive accuracy. This shift allows for the application of additional statistical evaluations, specifically the McNemar test \cite{Smith2020-cb}, to assess the significance of differences in classifier performance. In this context, the baseline for comparison is the ZeroR (majority) classifier, which consistently predicts the most frequent class label in the training set.
+The experimental configuration for this task mirrors the Borda count maximization setup (Section \ref{sec:borda-cout}), with the objective shifted to maximizing predictive accuracy. This change of objective was also reflected in the stratification strategy which is based on the final label instead of the gap. This shift allows for the application of additional statistical evaluations, specifically the McNemar test \cite{Smith2020-cb}, to assess the significance of differences in classifier performance. In this context, the baseline for comparison is the ZeroR (majority) classifier, which consistently predicts the most frequent class label in the training set.
 
 \begin{figure}[t]
     \centering
-    \includegraphics[width=.8\linewidth]{figures/wl_accuracy_svc.pdf}
+    \includegraphics[width=.7\linewidth]{figures/wl_accuracy_svc.pdf}
     \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features. Statistical significance relative to the majority classifier (MC) baseline is determined via Wilcoxon signed-rank and McNemar tests ($\alpha = 0.05$). Significance between the cut-based features and \texttt{fzn2feat} was evaluated using McNemar and Wilcoxon signed-rank tests ($p < 0.01$).}
     \label{fig:svc-accuracy}
 \end{figure}
@@ -100,8 +101,9 @@ Consistent with the observations in Section \ref{sec:borda-cout}, the comparison
 When compared against the \texttt{fzn2feat} baseline (Figure \ref{fig:svc-accuracy}, left), cut-based features exhibit significantly higher accuracy. This performance gain is confirmed by both McNemar and Wilcoxon signed-rank tests, with $p$-values below $0.01$. Conversely, inter-model comparisons between the various cut-based feature sets do not yield statistically significant differences.
 
 \begin{figure}[t]
-    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_accuracy_forest.pdf}
-    \includegraphics[width=.49\linewidth]{figures/wl-fzn2feat_accuracy_nn.pdf}
+    \centering
+    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_forest.pdf}
+    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_nn.pdf}
     \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against \texttt{fzn2feat} and the majority classifier (MC) baseline. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
     \label{fig:forest-nn-wlc-fzn2feat-accuracy}
 \end{figure}
@@ -116,10 +118,10 @@ In this task, we evaluated the 300 instances using the \texttt{CPLEX} \cite{Nick
 \begin{figure}[t]
     \centering
     \noindent
-    \includegraphics[width=.8\linewidth]{figures/wl_par_svc.pdf}
+    \includegraphics[width=.7\linewidth]{figures/wl_par_svc.pdf}
     \centering
     \noindent
-    \resizebox{.8\linewidth}{!}{%
+    \resizebox{.7\linewidth}{!}{%
         \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
             \cline{0-14}
             & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-1 & wlc-2 & wlce-1 & wlce-2 & fzn2feat & MC \\
@@ -148,8 +150,9 @@ In this task, we evaluated the 300 instances using the \texttt{CPLEX} \cite{Nick
 Figure \ref{fig:svc-par} illustrates the comparative accuracy of \texttt{WL}-based and \texttt{fzn2feat} features against the MC baseline, alongside the corresponding statistical significance results. In contrast to previous tasks, while all feature sets outperform the MC baseline, most node-informed \texttt{WL} features and \texttt{fzn2feat} exhibit comparable performance. Notably, \texttt{WLne-1} features outperform the \texttt{WLc-2} set in this instance, though they demonstrate no statistically significant improvement over \texttt{fzn2feat}.
 
 \begin{figure}[t]
-    \includegraphics[width=.49\textwidth]{figures/par_forest.pdf}
-    \includegraphics[width=.49\textwidth]{figures/par_nn.pdf}
+    \centering
+    \includegraphics[width=.44\textwidth]{figures/par_forest.pdf}
+    \includegraphics[width=.44\textwidth]{figures/par_nn.pdf}
     \caption{Comparative accuracy of \texttt{WL}-based features against \texttt{fzn2feat} and the MC baseline. Left: 
     RF results. Right: MLP results.}
     \label{fig:nn-forest-par}
@@ -157,13 +160,14 @@ Figure \ref{fig:svc-par} illustrates the comparative accuracy of \texttt{WL}-bas
 
 Similar trends are observed when utilizing RF and MLP classifiers (Figure \ref{fig:nn-forest-par}). While MLP models achieved the highest overall accuracy for both \texttt{WL}-based features and \texttt{fzn2feat}, no statistically significant differences were found between the various feature sets. Conversely, for the RF models, \texttt{fzn2feat} significantly underperformed, yielding statistically worse results compared to the \texttt{WL}-based feature sets.
 
-\subsection{Feature Extraction Cost}
+\subsection{Feature Extraction Cost}\label{sec:extraction-cost}
 The computational overhead for extracting cut-based features compared to \texttt{fzn2feat} is illustrated in Figure \ref{fig:extraction-time}. Because both methodologies necessitate a preliminary compilation from MiniZinc to FlatZinc, we exclude compilation time from the reported extraction costs to isolate the performance of the feature generators themselves. 
 
 While \texttt{fzn2feat} exhibits lower absolute extraction times, the vast majority of instances require less than one second even when utilizing cut-based features. It is important to note that the current implementation of the \texttt{WL} feature extraction pipeline (comprising graph conversion and Weisfeiler-Lehman aggregation) is not fully optimized. Significant performance gains could be realized through algorithmic refinements and the parallelization of independent graph operations, further reducing the overhead for large-scale instance sets.
 
 \begin{figure}[t]
-    \includegraphics[width=\linewidth]{figures/feature_extraction.pdf}
+    \centering
+    \includegraphics[width=.9\linewidth]{figures/feature_extraction.pdf}
     \caption{Feature extraction cost comparison between \texttt{WLc}/\texttt{WLce} and \texttt{fzn2feat}. The distribution of extraction times (left) is supplemented by pairwise performance comparisons (center, right).}
     \label{fig:extraction-time}
 \end{figure}
