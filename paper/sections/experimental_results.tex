@@ -1,14 +1,14 @@
 \section{Experimental Results}
 
-To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modeling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct three algorithm selection tasks: (i) maximizing the Borda count score across three solvers, (ii) maximizing prediction accuracy for the same solver set, and (iii) predicting whether a parallel solver execution provides a significant performance gain over its sequential counterpart. Solvers, in all tasks, were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout.
+To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modeling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct three algorithm selection tasks: (i) maximizing the Borda count score across three solvers, (ii) maximizing prediction accuracy for the same solver set, and (iii) predicting whether a parallel solver execution provides a significant performance gain over its sequential counterpart.\todo{some justification and motivation behind this choice} Solvers, in all tasks, were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout.
 
-Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat} \cite{Amadini2014-fn}, a feature set specifically engineered for constraint programming algorithm selection. 
+Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat} \cite{Amadini2014-fn}, a feature set specifically engineered for constraint programming algorithm selection. \todo{in background some info on this?}
 
 Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. 
 
-For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and three-layer Multi-Layer Perceptrons (MLP). The training pipeline followed a four-step protocol:
+For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and three-layer Multi-Layer Perceptrons (MLP).\todo{why?} The training pipeline followed a four-step protocol:
 \begin{enumerate}
-    \item \textbf{Hyperparameter Optimization:} We performed a grid search over predefined configurations, evaluating each via mean 5-fold cross-validation.
+    \item \textbf{Hyperparameter Optimization:} We performed a grid search over predefined configurations, evaluating each via mean 5-fold cross-validation.\todo{repeated nested cross validation with inner for hyperparameter tuning?}
     \item \textbf{Model Selection:} We selected the highest-scoring configuration. Ties were broken by prioritizing simpler models to mitigate overfitting:
     \begin{itemize}
         \item For SVM: lower regularization ($C$) and $\gamma$ values, favoring the RBF kernel.
