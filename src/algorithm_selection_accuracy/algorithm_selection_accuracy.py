@@ -9,6 +9,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
 from train_neural_network import train_and_test_nn
+from train_torch_neural_network import train_and_test_nn_torch
 from sklearn.model_selection import StratifiedKFold
 from common.wl_algorithms import wl_features, wl_extended_features, wl_extended_features_with_edges
 from train_as_accuracy_forest import train_and_test_rnd_forest
@@ -249,12 +250,13 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'])
-parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'f-knn', 'knn'])
+parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'nn-torch', 'f-knn', 'knn'])
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
 parser.add_argument('--rnd-state', required=True, type=int)
 parser.add_argument('--all-levels', action='store_true', help='Use a concatenation of all aggregation levels instead of only the last one')
+parser.add_argument('--gpu', action='store_true', help='Use GPU for training')
 
 def main():
     args = parser.parse_args()
@@ -267,6 +269,7 @@ def main():
     max_cv:int = args.max_cv
     rnd_state:int = args.rnd_state
     all_levels:bool = args.all_levels
+    use_gpu:bool = args.gpu
     # train_time:None|int = args.train_time
 
     data = load_data()
@@ -289,6 +292,8 @@ def main():
         res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat')
     elif model == 'nn':
         res = train_and_test_nn(train_data, test_data, False)
+    elif model == 'nn-torch':
+        res = train_and_test_nn_torch(train_data, test_data, False, use_gpu=use_gpu)
     elif model == 'knn':
         res = train_and_test_knn(train_data, test_data, False)
     elif model == 'f-knn':

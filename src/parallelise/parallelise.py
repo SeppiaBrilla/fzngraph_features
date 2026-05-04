@@ -13,13 +13,13 @@ from tqdm import tqdm
 from train_p_forest import train_and_test_rnd_forest
 from train_p_svc import train_and_test_svc
 from train_p_nn import train_and_test_nn
-import json, torch, random
+from train_p_torch_nn import train_and_test_nn_torch
+import json, random
 from copy import deepcopy
 from sklearn.model_selection import train_test_split, StratifiedKFold
 from collections import Counter
 
 def set_seed(seed:int):
-    torch.manual_seed(seed)
     np.random.seed(seed)
     random.seed(seed)
 
@@ -238,12 +238,13 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
-parser.add_argument('-m', '--model', type=str, required=True, choices=['rnd-forest', 'svc', 'nn'])
+parser.add_argument('-m', '--model', type=str, required=True, choices=['rnd-forest', 'svc', 'nn', 'nn-torch'])
 parser.add_argument('-r', '--rnd-state', type=int, required=True)
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
 parser.add_argument('--all-levels', action='store_true', help='Use a concatenation of all aggregation levels instead of only the last one')
+parser.add_argument('--gpu', action='store_true', help='Use GPU for training')
 
 
 def main():
@@ -257,6 +258,7 @@ def main():
     max_cv:int = args.max_cv
     rnd_state:int = args.rnd_state
     all_levels:bool = args.all_levels
+    use_gpu:bool = args.gpu
 
 
     set_seed(rnd_state)
@@ -281,6 +283,8 @@ def main():
         res = train_and_test_svc(train_data, test_data, rnd_state)
     elif model == 'nn':
         res = train_and_test_nn(train_data, test_data, rnd_state)
+    elif model == 'nn-torch':
+        res = train_and_test_nn_torch(train_data, test_data, rnd_state, use_gpu=use_gpu)
     else:
         raise Exception(f'unknown model {model}')
     with open(output_file, 'w') as f:
