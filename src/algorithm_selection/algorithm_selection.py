@@ -262,7 +262,7 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'])
-parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'nn-torch'])
+parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn'])
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
@@ -301,8 +301,6 @@ def main():
     elif model == 'svc':
         res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat')
     elif model == 'nn':
-        res = train_and_test_nn(train_data, test_data, False)
-    elif model == 'nn-torch':
         res = train_and_test_nn_torch(train_data, test_data, False)
     else:
         raise Exception(f'still unsupported model type {model}')
