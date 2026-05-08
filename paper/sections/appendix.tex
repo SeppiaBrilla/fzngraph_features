@@ -1,95 +1,95 @@
 \appendix
 \section{Node Types for FlatZinc}\label{sec:node-types}
-Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models to graphs. While this nodes have been especially designed around the FlatZinc interface, be believe that they could easily generalise to different languages with the only exception of global nodes which are tied to the one supported by the solver used for the MiniZinc to FlatZinc conversion (Gecode in our case).
+Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models to graphs. While these nodes have been especially designed around the FlatZinc interface, we believe that they could easily generalise to different languages, with the only exception of global nodes, which are tied to the one supported by the solver used for the MiniZinc to FlatZinc conversion (Gecode in our case).
 \begin{table}
   \centering
   \resizebox{\textwidth}{!}{
     \begin{tabular}{|c|c|c|c|c|c|}
       \cline{0-5}
-      Name & Type & Subtype & Is Cut & Is Global & Description \\
+ Name & Type & Subtype & Is Cut & Is Global & Description \\
       \cline{0-5}
-      Variable & variable & -- & No & No & Problem variable \\
-      Parameter & parameter & -- & No & No & Literal value or parameter \\
-      Multiply & operator & mul\_node & No & No & Multiplication operator \\
-      Linear Sum & operator & lin\_sum\_node & Yes & No & Weighted sum of variables \\
-      Sum & operator & sum\_node & No & No & Sum operator \\
-      Equality & constraint & equality\_node & No & No & Equality constraint \\
-      Inequality & constraint & inequality\_node & No & No & Equality constraint \\
-      Less than & constraint & le\_node & No & No & Strictly less than constraint \\
-      Less or Equal & constraint & leq\_node & No & No & Less than or equal constraint \\
-      Imply & constraint & imply\_node & No & No & Logical implication \\
-      If and only if & constraint & iff\_node & No & No & Logical equivalence \\
-      Not & constraint & not\_node & No & No & Logical negation \\
-      Or & constraint & or\_node & No & No & Logical disjunction \\
-      And & constraint & and\_node & No & No & Logical conjunction \\
-      Xor & constraint & xor\_node & No & No & Logical exclusive or \\
-      Index & operator & index\_node & No & No & Array index operator \\
-      Abs & operator & abs\_node & No & No & Absolute value operator \\
-      Division & operator & division\_node & No & No & Integer division operator \\
-      Max & operator & max\_node & No & No & Maximum operator \\
-      Min & operator & min\_node & No & No & Minimum operator \\
-      Modulo & operator & modulo\_node & No & No & Modulo operator \\
-      Pow & operator & pow\_node & No & No & Power operator \\
-      In & constraint & in\_node & No & No & Set membership constraint \\
-      Card & operator & card\_node & No & No & Set cardinality operator \\
-      Difference & operator & diff\_node & No & No & Set difference operator \\
-      Intersect & operator & intersect\_node & No & No & Set intersection operator \\
-      Subset & constraint & subset\_node & No & No & Set subset constraint \\
-      Symmetric difference & operator & symdiff\_node & No & No & Set symmetric difference operator \\
-      Union & operator & union\_node & No & No & Set union operator \\
-      Maximise & solve & maximise\_node & No & No & Maximisation objective \\
-      Minimise & solve & minimise\_node & No & No & Minimisation objective \\
-      Array & operator & array\_node & No & No & Array container \\
-      Cumulative & constraint & cumulative\_node & Yes & Yes & Global cumulative constraint \\
-      Integer Element & operator & int\_element\_node & Yes & Yes & Global element constraint \\
-      Linear equality iff & constraint & int\_lin\_eq\_impt\_node & Yes & No & Reified linear equality \\
-      Array max & constraint & array\_int\_maximum\_node & Yes & Yes & Global array maximum constraint \\
-      Schedule unary & constraint & schedule\_unary\_node & Yes & Yes & Global unary scheduling constraint \\
-      Linear less than iff & constraint & int\_le\_imp\_node & Yes & No & Reified linear less than \\
-      Maximum argument offset & constraint & maximum\_arg\_int\_offset\_node & Yes & Yes & Global maximum argument constraint \\
-      Circuit & constraint & circuit\_node & Yes & Yes & Global circuit constraint \\
-      Count equality & constraint & count\_eq\_node & Yes & Yes & Global count equality constraint \\
-      Count equality iff & constraint & count\_eq\_reif\_node & Yes & Yes & Reified count equality constraint \\
-      Set in iff & constraint & set\_in\_imp\_node & Yes & Yes & Reified set membership constraint \\
-      Global cardinality & constraint & global\_cardinality\_node & Yes & Yes & Global cardinality constraint \\
-      Global cardinality low up & constraint & global\_cardinality\_low\_up\_node & Yes & Yes & Global cardinality constraint with bounds \\
-      Global cardinality low up closed & constraint & global\_cardinality\_low\_up\_closed\_node & Yes & Yes & Global cardinality constraint with closed bounds \\
-      Xor iff & constraint & bool\_xor\_imp\_node & Yes & No & Reified exclusive or constraint \\
-      No overlap & constraint & nooverlap\_node & Yes & Yes & Global no overlap constraint \\
-      Regular & constraint & regular\_node & Yes & Yes & Global regular constraint \\
-      All different & constraint & all\_different\_node & Yes & Yes & Global all different constraint \\
-      Equality iff & constraint & eq\_imp\_node & Yes & Yes & Reified equality constraint \\
-      All equal & constraint & all\_equal\_node & Yes & Yes & Global all equal constraint \\
-      Boolean Element & operator & bool\_element\_node & Yes & No & Global element constraint (boolean) \\
-      Array minimum & constraint & array\_int\_minimum\_node & Yes & No & Global array minimum constraint \\
-      Bool clause iff & constraint & bool\_clause\_reif\_node & Yes & No & Reified boolean clause constraint \\
-      Element 2d & operator & int\_element2d\_node & Yes & Yes & Global 2D element constraint \\
-      Bin packing load & constraint & bin\_packing\_load\_node & Yes & Yes & Global bin packing load constraint \\
-      Table & constraint & table\_int\_node & Yes & Yes & Global table constraint \\
-      Precede & constraint & precede\_node & Yes & Yes & Global precede constraint \\
-      Array less or equal & constraint & array\_int\_lq\_node & Yes & No & Global array less or equal constraint \\
-      Linear less than iff & constraint & int\_lin\_le\_imp\_node & Yes & No & Reified linear less than \\
-      Linear not equal iff & constraint & int\_lin\_ne\_imp\_node & Yes & No & Reified linear not equal \\
-      Increasing integer & constraint & increasing\_int\_node (int) & Yes & Yes & Global increasing integer constraint \\
-      Inverse & constraint & inverse\_offsets\_node & Yes & Yes & Global inverse constraint \\
-      N value & constraint & nvalue\_node & Yes & Yes & Global n-value constraint \\
-      Not equal iff & constraint & int\_ne\_imp\_node & Yes & No & Reified not equal constraint \\
-      Increasing bool & constraint & increasing\_bool\_node & Yes & Yes & Global increasing boolean constraint \\
-      Member integer & constraint & member\_int\_node & Yes & Yes & Global member integer constraint \\
-      Table iff & constraint & table\_int\_imp\_node & Yes & Yes & Reified global table constraint \\
-      At least & constraint & at\_least\_node & Yes & Yes & Global at least constraint \\
-      At most & constraint & at\_most\_node & Yes & Yes & Global at most constraint \\
-      Integer pow & constraint & int\_pow\_node & Yes & Yes & Global integer power constraint \\
-      Global cardinality closed & constraint & global\_cardinality\_closed\_node & Yes & Yes & Global cardinality constraint closed \\
+ Variable & variable & -- & No & No & Problem variable \\
+ Parameter & parameter & -- & No & No & Literal value or parameter \\
+ Multiply & operator & mul\_node & No & No & Multiplication operator \\
+ Linear Sum & operator & lin\_sum\_node & Yes & No & Weighted sum of variables \\
+ Sum & operator & sum\_node & No & No & Sum operator \\
+ Equality & constraint & equality\_node & No & No & Equality constraint \\
+ Inequality & constraint & inequality\_node & No & No & Equality constraint \\
+ Less than & constraint & le\_node & No & No & Strictly less than constraint \\
+ Less or Equal & constraint & leq\_node & No & No & Less than or equal constraint \\
+ Imply & constraint & imply\_node & No & No & Logical implication \\
+ If and only if & constraint & iff\_node & No & No & Logical equivalence \\
+ Not & constraint & not\_node & No & No & Logical negation \\
+ Or & constraint & or\_node & No & No & Logical disjunction \\
+ And & constraint & and\_node & No & No & Logical conjunction \\
+ Xor & constraint & xor\_node & No & No & Logical exclusive or \\
+ Index & operator & index\_node & No & No & Array index operator \\
+ Abs & operator & abs\_node & No & No & Absolute value operator \\
+ Division & operator & division\_node & No & No & Integer division operator \\
+ Max & operator & max\_node & No & No & Maximum operator \\
+ Min & operator & min\_node & No & No & Minimum operator \\
+ Modulo & operator & modulo\_node & No & No & Modulo operator \\
+ Pow & operator & pow\_node & No & No & Power operator \\
+ In & constraint & in\_node & No & No & Set membership constraint \\
+ Card & operator & card\_node & No & No & Set cardinality operator \\
+ Difference & operator & diff\_node & No & No & Set difference operator \\
+ Intersect & operator & intersect\_node & No & No & Set intersection operator \\
+ Subset & constraint & subset\_node & No & No & Set subset constraint \\
+ Symmetric difference & operator & symdiff\_node & No & No & Set symmetric difference operator \\
+ Union & operator & union\_node & No & No & Set union operator \\
+ Maximise & solve & maximise\_node & No & No & Maximisation objective \\
+ Minimise & solve & minimise\_node & No & No & Minimisation objective \\
+ Array & operator & array\_node & No & No & Array container \\
+ Cumulative & constraint & cumulative\_node & Yes & Yes & Global cumulative constraint \\
+ Integer Element & operator & int\_element\_node & Yes & Yes & Global element constraint \\
+ Linear equality iff & constraint & int\_lin\_eq\_impt\_node & Yes & No & Reified linear equality \\
+ Array max & constraint & array\_int\_maximum\_node & Yes & Yes & Global array maximum constraint \\
+ Schedule unary & constraint & schedule\_unary\_node & Yes & Yes & Global unary scheduling constraint \\
+ Linear less than iff & constraint & int\_le\_imp\_node & Yes & No & Reified linear less than \\
+ Maximum argument offset & constraint & maximum\_arg\_int\_offset\_node & Yes & Yes & Global maximum argument constraint \\
+ Circuit & constraint & circuit\_node & Yes & Yes & Global circuit constraint \\
+ Count equality & constraint & count\_eq\_node & Yes & Yes & Global count equality constraint \\
+ Count equality iff & constraint & count\_eq\_reif\_node & Yes & Yes & Reified count equality constraint \\
+ Set in iff & constraint & set\_in\_imp\_node & Yes & Yes & Reified set membership constraint \\
+ Global cardinality & constraint & global\_cardinality\_node & Yes & Yes & Global cardinality constraint \\
+ Global cardinality low up & constraint & global\_cardinality\_low\_up\_node & Yes & Yes & Global cardinality constraint with bounds \\
+ Global cardinality low up closed & constraint & global\_cardinality\_low\_up\_closed\_node & Yes & Yes & Global cardinality constraint with closed bounds \\
+ Xor iff & constraint & bool\_xor\_imp\_node & Yes & No & Reified exclusive or constraint \\
+ No overlap & constraint & nooverlap\_node & Yes & Yes & Global no overlap constraint \\
+ Regular & constraint & regular\_node & Yes & Yes & Global regular constraint \\
+ All different & constraint & all\_different\_node & Yes & Yes & Global all different constraint \\
+ Equality iff & constraint & eq\_imp\_node & Yes & Yes & Reified equality constraint \\
+ All equal & constraint & all\_equal\_node & Yes & Yes & Global all equal constraint \\
+ Boolean Element & operator & bool\_element\_node & Yes & No & Global element constraint (boolean) \\
+ Array minimum & constraint & array\_int\_minimum\_node & Yes & No & Global array minimum constraint \\
+ Bool clause iff & constraint & bool\_clause\_reif\_node & Yes & No & Reified boolean clause constraint \\
+ Element 2d & operator & int\_element2d\_node & Yes & Yes & Global 2D element constraint \\
+ Bin packing load & constraint & bin\_packing\_load\_node & Yes & Yes & Global bin packing load constraint \\
+ Table & constraint & table\_int\_node & Yes & Yes & Global table constraint \\
+ Precede & constraint & precede\_node & Yes & Yes & Global precede constraint \\
+ Array less or equal & constraint & array\_int\_lq\_node & Yes & No & Global array less or equal constraint \\
+ Linear less than iff & constraint & int\_lin\_le\_imp\_node & Yes & No & Reified linear less than \\
+ Linear not equal iff & constraint & int\_lin\_ne\_imp\_node & Yes & No & Reified linear not equal \\
+ Increasing integer & constraint & increasing\_int\_node (int) & Yes & Yes & Global increasing integer constraint \\
+ Inverse & constraint & inverse\_offsets\_node & Yes & Yes & Global inverse constraint \\
+ N value & constraint & nvalue\_node & Yes & Yes & Global n-value constraint \\
+ Not equal iff & constraint & int\_ne\_imp\_node & Yes & No & Reified not equal constraint \\
+ Increasing bool & constraint & increasing\_bool\_node & Yes & Yes & Global increasing boolean constraint \\
+ Member integer & constraint & member\_int\_node & Yes & Yes & Global member integer constraint \\
+ Table iff & constraint & table\_int\_imp\_node & Yes & Yes & Reified global table constraint \\
+ At least & constraint & at\_least\_node & Yes & Yes & Global at least constraint \\
+ At most & constraint & at\_most\_node & Yes & Yes & Global at most constraint \\
+ Integer pow & constraint & int\_pow\_node & Yes & Yes & Global integer power constraint \\
+ Global cardinality closed & constraint & global\_cardinality\_closed\_node & Yes & Yes & Global cardinality constraint closed \\
       \cline{0-5}
     \end{tabular}
-  }
+ }
   \caption{Node types used in our graphs converted from FlatZinc.}
   \label{tab:nodes}
 \end{table}
 
 \section{On The Shallowness of the Graphs}\label{sec:graph-depth}
-Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints are present and they usually differ from the type of constraint that replace the equality (e.g. inequality, less or equal than, etc.) The graph at this level has a diameter of 4 which is reduced to 2 when the cut is applied. Most supported constrains are, instead, quite simple with most of them having a diameter of one or two. For the full list of supported constraints we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
+Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints are present, and they usually differ from the type of constraint that replaces the equality (e.g. inequality, less than or equal to, etc.) The graph at this level has a diameter of 4, which is reduced to 2 when the cut is applied. Most supported constraints are, instead, quite simple, with most of them having a diameter of one or two. For the full list of supported constraints, we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
 
 \begin{figure}[t]
   \centering
@@ -98,42 +98,42 @@ Figure \ref{fig:long-graph} shows the constraint that produces the deepest path 
   \label{fig:long-graph}
 \end{figure}
 
-\section{All Borda Count Results}
-Figures \ref{fig:RF-bordacount-all} and \ref{fig:nn-bordacount-all} show the results on the Borda count tasks for (respectively) RF and MLP classifiers trained with all Feature sets. RF results show similar results for all \texttt{WL} based features that include node information as well as \texttt{fzn2feat} features. On the other hand, MLP results show a trend similar to SVM where cut features significantly outperform the other \texttt{WL}-based features as well as showing an higher gap with respect to \texttt{fzn2feat}.
+\section{All Borda Count Results}\label{sec:borda-scores}
+Figures \ref{fig:RF-bordacount-all} and \ref{fig:nn-bordacount-all} show the results on the Borda count tasks for (respectively) RF and MLP classifiers trained with all Feature sets. RF results show similar results for all \texttt{WL} based features that include node information, as well as \texttt{fzn2feat} features. On the other hand, MLP results show a trend similar to SVM, where cut features significantly outperform the other \texttt{WL}-based features, as well as showing a higher gap with respect to \texttt{fzn2feat}.
 
 \begin{figure}
   \centering
   \includegraphics[width=.7\linewidth]{figures/all-wl-fzn2feat_score_forest}
-  \caption{Results of all features sets trained with the RF classifier on the Borda count maximisation task.}
+  \caption{Results of all feature sets trained with the RF classifier on the Borda count maximisation task.}
   \label{fig:RF-bordacount-all}
 \end{figure}
 
 \begin{figure}
   \centering
   \includegraphics[width=.7\linewidth]{figures/all-wl-fzn2feat_score_nn}
-  \caption{Results of all features sets trained with the MLP classifier on the Borda count maximisation task.}
+  \caption{Results of all feature sets trained with the MLP classifier on the Borda count maximisation task.}
   \label{fig:nn-bordacount-all}
 \end{figure}
 
-\section{All Algorithm Section Accuracy Results}
+\section{All Algorithm Section Accuracy Results}\label{sec:as-acc}
 Figures \ref{fig:RF-acc-all} and \ref{fig:nn-acc-all} show the results on the Algorithm selection accuracy tasks for (respectively) RF and MLP classifiers trained with all Feature sets. Similarly to the Borda count counterpart, RF results show similar results for all \texttt{WL} based features that include node information as well as \texttt{fzn2feat} features, while, MLP results show a trend similar to SVM where cut features significantly outperform the other \texttt{WL}-based features as well as showing an higher gap with respect to \texttt{fzn2feat} (although less pronounced respect to the Borda Count).
 
 \begin{figure}
   \centering
   \includegraphics[width=.7\linewidth]{figures/all-wl-fzn2feat_accuracy_forest}
-  \caption{Results of all features sets trained with the RF classifier on the Algorithm Selection accuracy maximisation task.}
+  \caption{Results of all feature sets trained with the RF classifier on the Algorithm Selection accuracy maximisation task.}
   \label{fig:RF-acc-all}
 \end{figure}
 
 \begin{figure}
   \centering
   \includegraphics[width=.7\linewidth]{figures/all-wl-fzn2feat_accuracy_nn.pdf}
-  \caption{Results of all features sets trained with the MLP classifier on the Algorithm Selection accuracy maximisation task.}
+  \caption{Results of all feature sets trained with the MLP classifier on the Algorithm Selection accuracy maximisation task.}
   \label{fig:nn-acc-all}
 \end{figure}
 
 \section{Ablation Study on the Importance of Concatenating All Aggregation Levels}\label{sec:ablation-study}
-To asses whether only using the last aggregation level of the \texttt{WL} resulted or not in a loss of performance, we conducted an ablation study on the best performing features: \texttt{WLc-1/2}, \texttt{WLce-1/2}, \texttt{WLn-1/2}, and \texttt{WLne-1/2} across all different tasks and ML models. Results can be found in Tables \ref{tab:all-levels-borda} (Borda score), \ref{tab:all-levels-accuracy} (algorithm selection accuracy), and \ref{tab:all-levels-par} (parallel prediction). The tables show the mean and median results of the ML models trained on only the last level or on all levels of aggregation as well as the p value computed with the Wilcoxon test. In all cases but one, the results are not statistically significant. The only case in which they are (\texttt{WLc-1} in SVM algorithm selection accuracy prediction), it is in favour of the features with only the last aggregation level.
+To assess whether only using the last aggregation level of the \texttt{WL} resulted in a loss of performance, we conducted an ablation study on the best-performing features: \texttt{WLc-1/2}, \texttt{WLce-1/2}, \texttt{WLn-1/2}, and \texttt{WLne-1/2} across all different tasks and ML models. Results can be found in Tables \ref{tab:all-levels-borda} (Borda score), \ref{tab:all-levels-accuracy} (algorithm selection accuracy), and \ref{tab:all-levels-par} (parallel prediction). The tables show the mean and median results of the ML models trained on only the last level or on all levels of aggregation, as well as the p-value computed with the Wilcoxon test. In all cases but one, the results are not statistically significant. The only case in which they are (\texttt{WLc-1} in SVM algorithm selection accuracy prediction), it is in favour of the features with only the last aggregation level.
 
 \begin{table}[t]
   \centering
@@ -155,7 +155,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLne-1} & 0.226 & 0.212 & 0.258 & 0.245 & 0.561 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
 
   \vspace{1em} % Optional spacing between rows
@@ -178,7 +178,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLc-2} & 0.450 & 0.449 & 0.444 & 0.459 & 0.863 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
   \begin{subtable}{.49\linewidth}
     \centering
@@ -192,9 +192,9 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLc-1} & 0.399 & 0.387 & 0.413 & 0.390 & 0.730 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
-  \caption{Results of the ML models trained for Borda count maximisation on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores as well as the p value calculated with the Wilcoxon test.}
+  \caption{Results of the ML models trained for Borda count maximisation on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores, as well as the p-value calculated with the Wilcoxon test.}
   \label{tab:all-levels-borda}
 \end{table}
 
@@ -218,7 +218,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLne-2} & 0.605 & 0.604 & 0.603 & 0.603 & 0.974 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
 
   \vspace{1em} % Optional spacing between rows
@@ -241,7 +241,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLne-2} & 0.675 & 0.672 & 0.672 & 0.672 & 0.866 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
   \begin{subtable}{.49\linewidth}
     \centering
@@ -256,9 +256,9 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLce-1} & 0.613 & 0.614 & 0.621 & 0.621 & 0.964 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
-  \caption{Results of the ML models trained for algorithm selection accuracy maximisation on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores as well as the p value calculated with the Wilcoxon test.}
+  \caption{Results of the ML models trained for algorithm selection accuracy maximisation on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores, as well as the p-value calculated with the Wilcoxon test.}
   \label{tab:all-levels-accuracy}
 \end{table}
 
@@ -282,7 +282,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLne-2} & 0.604 & 0.601 & 0.600 & 0.600 & 0.845 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
 
   \vspace{1em} % Optional spacing between rows
@@ -305,7 +305,7 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLne-2} & 0.642 & 0.648 & 0.650 & 0.650 & 0.631 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
   \begin{subtable}{.49\linewidth}
     \centering
@@ -319,8 +319,8 @@ To asses whether only using the last aggregation level of the \texttt{WL} result
         \texttt{WLc-1} & 0.647 & 0.650 & 0.633 & 0.650 & 0.891 \\
         \bottomrule
       \end{tabular}
-    }
+ }
   \end{subtable}
-  \caption{Results of the ML models trained for parallel prediction on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores as well as the p value calculated with the Wilcoxon test.}
+  \caption{Results of the ML models trained for parallel prediction on \texttt{WL} features with (all-levels) and without (last) all aggregation levels. Results report mean and median scores, as well as the p-value calculated with the Wilcoxon test.}
   \label{tab:all-levels-par}
 \end{table}
