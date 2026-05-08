@@ -8,7 +8,7 @@ import os
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from common.graph_loader import load_graph
-from common.wl_algorithms import wl_extended_features_with_edges, wl_features, wl_extended_features
+from common.wl_algorithms import wl_features, wl_extended_features, wl_extended_features_with_edges, undirected_wl_extended_features, undirected_wl_extended_features_with_edges, undirected_wl_with_node_and_edge_features, undirected_wl_with_node_features
 from tqdm import tqdm
 from train_p_forest import train_and_test_rnd_forest
 from train_p_svc import train_and_test_svc
@@ -63,14 +63,22 @@ def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[
         t['features'] = np.array(np.delete(t['features'], idxs).tolist() + [np.sum(np.array(t['features'])[idxs])])
     return train_data, test_data
 
-def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int, all_levels:bool) -> tuple[list[dict],list[dict]]:
+def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int, all_levels:bool, undirected=False) -> tuple[list[dict],list[dict]]:
     colors = {}
     MAX_COLORS = None
 
     for t in tqdm(train_data, desc='train data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=True, max_colors=MAX_COLORS, with_neighbours=False)
+        if undirected:
+            if wl_type == 'node_features':
+                res = undirected_wl_with_node_features(g, colors, max_iter, True, MAX_COLORS, with_neighbours=False)
+            elif wl_type == 'node_edge_features':
+                res = undirected_wl_with_node_and_edge_features(g, colors, max_iter, True, MAX_COLORS, with_neighbours=False)
+            else:
+                raise Exception(f'unsupported undirected type {wl_type}')
+        else:
+            res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=True, max_colors=MAX_COLORS, with_neighbours=False)
         t['features'] = res
 
     colors_names = set(sorted(set(int(c) for c in colors.values())))
@@ -92,7 +100,15 @@ def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Lit
     for t in tqdm(test_data, desc='test data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=False, max_colors=MAX_COLORS, with_neighbours=False)
+        if undirected:
+            if wl_type == 'node_features':
+                res = undirected_wl_with_node_features(g, colors, max_iter, False, MAX_COLORS, with_neighbours=False)
+            elif wl_type == 'node_edge_features':
+                res = undirected_wl_with_node_and_edge_features(g, colors, max_iter, False, MAX_COLORS, with_neighbours=False)
+            else:
+                raise Exception(f'unsupported undirected type {wl_type}')
+        else:
+            res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=False, max_colors=MAX_COLORS, with_neighbours=False)
         if all_levels:
             features = []
             for r in res:
@@ -108,14 +124,20 @@ def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Lit
 
     return prune(train_data, test_data)
 
-def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool, all_levels:bool) -> tuple[list[dict],list[dict]]:
+def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool, undirected:bool, all_levels:bool) -> tuple[list[dict],list[dict]]:
     colors = {}
 
     g_pairs = set()
     for t in tqdm(train_data, desc='train data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        if edge:
+        if undirected and not edge:
+            res, extra = undirected_wl_extended_features(g, colors, max_iter=max_iter, training=True)
+            res = [res]
+        elif undirected and edge:
+            res, extra = undirected_wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+            res = [res]
+        elif not undirected and edge:
             res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
         else:
             res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
@@ -145,10 +167,16 @@ def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int,
     for t in tqdm(test_data, desc='test data'):
         with open(t['graph']) as f:
             g = load_graph(f)
-        if edge:
-            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=False)
+        if undirected and not edge:
+            res, extra = undirected_wl_extended_features(g, colors, max_iter=max_iter, training=True)
+            res = [res]
+        elif undirected and edge:
+            res, extra = undirected_wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+            res = [res]
+        elif not undirected and edge:
+            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
         else:
-            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=False)
+            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
         
         if all_levels:
             features = []
@@ -185,7 +213,7 @@ def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict
 def get_features(
         train_data:list[dict],
         test_data:list[dict],
-        features_type:Literal['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wln-0', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'],
+        features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wlun-1', 'wlun-2', 'wlune-1', 'wlune-2', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'],
         all_levels:bool=False
     ) -> tuple[list[dict], list[dict]]:
     '''
@@ -212,15 +240,35 @@ def get_features(
     elif features_type == 'wlne-2':
         return compute_wl_features(train_data, test_data, 'node_edge_features', 2, all_levels)
 
+    elif features_type == 'wlun-1':
+        return compute_wl_features(train_data, test_data, 'node_features', 1, all_levels, True)
+    elif features_type == 'wlun-2':
+        return compute_wl_features(train_data, test_data, 'node_features', 2, all_levels, True)
+
+    elif features_type == 'wlune-1':
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 1, False, True)
+    elif features_type == 'wlune-2':
+        return compute_wl_features(train_data, test_data, 'node_edge_features', 2, False, True)
+
     elif features_type == 'wlc-1':
-        return compute_custom_wl(train_data, test_data, 1, False, all_levels)
+        return compute_custom_wl(train_data, test_data, 1, False, False, all_levels)
     elif features_type == 'wlc-2':
-        return compute_custom_wl(train_data, test_data, 2, False, all_levels)
+        return compute_custom_wl(train_data, test_data, 2, False, False, all_levels)
 
     elif features_type == 'wlce-1':
-        return compute_custom_wl(train_data, test_data, 1, True, all_levels)
+        return compute_custom_wl(train_data, test_data, 1, True, False, all_levels)
     elif features_type == 'wlce-2':
-        return compute_custom_wl(train_data, test_data, 2, True, all_levels)
+        return compute_custom_wl(train_data, test_data, 2, True, False, all_levels)
+
+    elif features_type == 'wlcu-1':
+        return compute_custom_wl(train_data, test_data, 1, False, True, all_levels)
+    elif features_type == 'wlcu-2':
+        return compute_custom_wl(train_data, test_data, 2, False, True, all_levels)
+
+    elif features_type == 'wlceu-1':
+        return compute_custom_wl(train_data, test_data, 1, False, True, all_levels)
+    elif features_type == 'wlceu-2':
+        return compute_custom_wl(train_data, test_data, 2, False, True, all_levels)
 
     elif features_type == 'fzn2feat':
         return get_fzn2feat(train_data, test_data)
@@ -237,7 +285,7 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
     return train_data, test_data
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'])
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'fzn2feat'])
 parser.add_argument('-m', '--model', type=str, required=True, choices=['rnd-forest', 'svc', 'nn'])
 parser.add_argument('-r', '--rnd-state', type=int, required=True)
 parser.add_argument('--cv-fold', required=True, type=int, choices=[0,1,2,3,4])
@@ -249,16 +297,13 @@ parser.add_argument('--gpu', action='store_true', help='Use GPU for training')
 
 def main():
     args = parser.parse_args()
-    features_type:Literal['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wl-0', 'wl-1',
-                          'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 
-                          'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
+    features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'] = args.features
     model:str = args.model
     fold:int = args.cv_fold
     output_file:str = args.result
     max_cv:int = args.max_cv
     rnd_state:int = args.rnd_state
     all_levels:bool = args.all_levels
-    use_gpu:bool = args.gpu
 
 
     set_seed(rnd_state)
@@ -282,7 +327,7 @@ def main():
     elif model == 'svc':
         res = train_and_test_svc(train_data, test_data, rnd_state)
     elif model == 'nn':
-        res = train_and_test_nn_torch(train_data, test_data, rnd_state, use_gpu=use_gpu)
+        res = train_and_test_nn_torch(train_data, test_data, rnd_state)
     else:
         raise Exception(f'unknown model {model}')
     with open(output_file, 'w') as f:

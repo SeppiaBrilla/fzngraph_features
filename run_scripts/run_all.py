@@ -2,7 +2,7 @@ import argparse, subprocess, os
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-e', '--experiment', type=str, choices=['as', 'as-acc', 'par'], required=True)
-parser.add_argument('-f', '--features', type=str, choices=['wlce-1', 'wlce-2', 'wlc-0', 'wlc-1', 'wlc-2', 'wlcc', 'wl-0', 'wl-1', 'wl-2', 'wln-0', 'wln-1', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-0', 'wlne-1', 'wlne-2', 'fzn2feat'], required=True)
+parser.add_argument('-f', '--features', type=str, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'fzn2feat'], required=True)
 parser.add_argument('-m', '--model', type=str, choices=['svc', 'rnd-forest', 'nn', 'nn-torch', 'f-knn', 'knn'], required=True)
 parser.add_argument('-b', '--base-name', required=True)
 parser.add_argument('--all-levels', action='store_true', help='use all WL levels')

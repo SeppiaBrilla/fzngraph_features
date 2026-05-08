@@ -206,7 +206,7 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
     X_train = X_train[:, sorted_indices]
     X_test  = X_test[:, sorted_indices]
 
-    hyperparam = find_hyperparameters(X_train, y_train, scores, 10)
+    hyperparam = find_hyperparameters(X_train, y_train, scores, 5)
     size = find_size(X_train, y_train, scores, hyperparam, is_wl)
     # size = None
     if not size is None:
