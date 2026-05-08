@@ -21,7 +21,7 @@
 \usepackage{algpseudocode}
 \usepackage[dvipsnames]{xcolor}
 \usepackage{todonotes}
-
+\usepackage{subcaption}
 % comments
 \usepackage{color}
 \definecolor{mygreen}{rgb}{0,0.6,0}
@@ -61,7 +61,7 @@
 \maketitle
 
 \begin{abstract}
-We have new features and they are decent enough.
+Algorithm Selection is essential for efficient Constraint Programming. Over the years, many algorithm selectors based on machine learning methods have been successfully applied, yet traditional feature extraction methods often rely on instance-level statistics that fail to capture the underlying problem structure. This paper introduces a novel feature extraction methodology that integrates graph conversion. By utilizing Weisfeiler-Lehman graph kernels, we generate robust structural representations of problem instances. Our primary contribution is a cut-based representation (\texttt{WLc}) designed to model structural partitions and provide a more nuanced predictive signal. We evaluate our approach on instances from the 2023--2025 MiniZinc Challenges across three tasks: maximizing Borda count scores, maximizing predictive accuracy, and predicting parallel search improvements. Experimental results across Support Vector Machines, Random Forests, and Multi-Layer Perceptrons demonstrate that the proposed features consistently outperform standard baselines. In accuracy-driven tasks, \texttt{WLc} features establish a new state-of-the-art, significantly outperforming \texttt{fzn2feat} ($p < 0.01$), while remaining highly competitive in Borda count maximization. Furthermore, our methodology exhibits high stability across different learning paradigms, proving its viability for practical algorithm selection pipelines.
 
 \end{abstract}
 
@@ -70,9 +70,11 @@ We have new features and they are decent enough.
 \input{sections/graph_conversion}
 \input{sections/feature_extraction}
 \input{sections/experimental_results}
+\input{sections/conclusions}
 
 \bibliographystyle{plain}
 \bibliography{references}
 
+\input{sections/appendix}
 
 \end{document}
