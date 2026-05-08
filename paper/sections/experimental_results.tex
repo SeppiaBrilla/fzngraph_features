@@ -1,174 +1,214 @@
 \section{Experimental Results}
 
-To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modeling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct three algorithm selection tasks: (i) maximizing the Borda count score across three solvers, (ii) maximizing prediction accuracy for the same solver set, and (iii) predicting whether a parallel solver execution provides a significant performance gain over its sequential counterpart.\todo{some justification and motivation behind this choice} Solvers, in all tasks, were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout.
+To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modeling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct three algorithm selection tasks: (i) maximizing the Borda count score across three solvers, (ii) maximizing prediction accuracy for the same solver set, and (iii) predicting whether a parallel solver execution provides a significant performance gain over its sequential counterpart. The latter, while not a standard AS task, we argue is of increasing importance since many solvers now support parallel search strategies. Solvers, in all tasks, were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout.
 
-Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat} \cite{Amadini2014-fn}, a feature set specifically engineered for constraint programming algorithm selection. \todo{in background some info on this?}
+Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat}.
 
-Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. 
+Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. The number of aggregation steps is appended to the features using a dash (\texttt{-}) sign (example: \texttt{Wlc-n} features with one aggregation will be \texttt{WLc-n-1}).
 
-For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and three-layer Multi-Layer Perceptrons (MLP).\todo{why?} The training pipeline followed a four-step protocol:
+For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and three-layer Multi-Layer Perceptrons (MLP) which is the simplest MLP architecture capable of approximating any continuous function while minimizing the risk of overfitting and vanishing gradients. All tasks have been evaluated using repeated five fold nested cross validation on 10 random seeds for a total of 50 repetitions per task per ML model. The training pipeline followed a four-step protocol:
 \begin{enumerate}
-    \item \textbf{Hyperparameter Optimization:} We performed a grid search over predefined configurations, evaluating each via mean 5-fold cross-validation.\todo{repeated nested cross validation with inner for hyperparameter tuning?}
-    \item \textbf{Model Selection:} We selected the highest-scoring configuration. Ties were broken by prioritizing simpler models to mitigate overfitting:
+  \item \textbf{Hyperparameter Optimization:} We performed a grid search over predefined configurations, evaluating each via mean 5-fold internal cross-validation.
+  \item \textbf{Model Selection:} We selected the highest-scoring configuration. Ties were broken by prioritizing simpler models to mitigate overfitting:
     \begin{itemize}
-        \item For SVM: lower regularization ($C$) and $\gamma$ values, favoring the RBF kernel.
-        \item For RF: fewer trees and shallower maximum depth.
-        \item For MLP: fewer training steps and a smaller $\alpha$ penalty.
+      \item For SVM: lower regularization ($C$) and $\gamma$ values, favoring the RBF kernel.
+      \item For RF: fewer trees and shallower maximum depth.
+      \item For MLP: fewer training steps and a smaller $\alpha$ penalty.
     \end{itemize}
-    \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range $[20, \min(\text{n\_features}, \text{n\_samples})[$ with a step size of 20.
-    \item \textbf{Final Feature Selection:} The feature set (original or PCA-transformed) yielding the highest cross-validation score was selected for final evaluation.
-\end{enumerate}
+  \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range $[20, \min(\text{n\_features}, \text{n\_samples})[$ with a step size of 20.
+      \item \textbf{Final Feature Selection:} The feature set (original or PCA-transformed) yielding the highest cross-validation score was selected for final evaluation.
+    \end{enumerate}
 
-The last two steps (Dimensionality Reduction and Final Feature Selection) have been skipped for MLP classifiers due to their ability to handle high-dimensional data.
+    The last two steps (Dimensionality Reduction and Final Feature Selection) have been skipped for MLP classifiers due to their ability to handle high-dimensional data.
 
-The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimization, ensemble-based logical partitioning, and connectionist functional approximation. Together, these models ensure that the observed performance of the new features is robust across different algorithmic structures and not an artifact of a single learning bias.
-Our training protocol prioritizes model generalization by combining exhaustive grid search with a complexity-penalizing selection logic. While the SVM and RF models were subjected to an iterative PCA-based dimensionality reduction to minimize noise and multicollinearity, this step was bypassed for the MLP. This distinction acknowledges the MLP's native capacity for high-dimensional representation learning and internal feature weighting, thereby avoiding the potential loss of information associated with extrinsic linear transformations like PCA.
+    The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimization, ensemble-based logical partitioning, and connectionist functional approximation. Together, these models ensure that the observed performance of the new features is robust across different algorithmic structures and not an artifact of a single learning bias.
+    Our training protocol prioritizes model generalization by combining exhaustive grid search with a complexity-penalizing selection logic. While the SVM and RF models were subjected to an iterative PCA-based dimensionality reduction to minimize noise and multicollinearity, this step was bypassed for the MLP. This distinction acknowledges the MLP's native capacity for high-dimensional representation learning and internal feature weighting, thereby avoiding the potential loss of information associated with extrinsic linear transformations like PCA.
 
-All figures group together features extracted with the same methodology but with different aggregation steps using an alternated shaded background to improve readability. 
+    All statistical significance measures across folds have been performed using Wilcoxon signed-rank test ($\alpha = 0.05$) and McNemar test ($\alpha = 0.05$) to compare individual classifications when possible (tasks ii and iii).
 
-\begin{figure}[t]
-        \centering
-        \noindent
-        \includegraphics[width=.7\linewidth]{figures/wl_score_svc.pdf}
-        \centering
-        \noindent
-        % \vspace{-2.6\baselineskip} % Adjust this value as needed
-        \resizebox{.7\linewidth}{!}{%
-            \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
-                \cline{0-13}
-                & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-1 & wlc-2 & wlce-1 & wlce-2 & fzn2feat \\
-                \cline{0-13}
-                wl-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wl-2 & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wle-1 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wle-2 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wln-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wln-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wlne-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wlne-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
-                wlc-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-                wlc-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-                wlce-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-                wlce-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-                fzn2feat & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textbf{--} \\
-                \cline{0-13}
-            \end{tabular}%
-        }
-    \caption{Performance results for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features for the Borda count maximization task. Scores (top) are normalized as $S_{norm} = \frac{S - S_{sbs}}{S_{vbs} - S_{sbs}}$, where $S$ is the model score, $S_{sbs}$ is the Single Best Solver, and $S_{vbs}$ is the Virtual Best Solver. The statistical significance table (bottom) indicates results compared to the baseline using a Wilcoxon signed-rank test ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance ($p < 0.05$), \textcolor{ForestGreen}{\checkmark} denotes significantly better performance ($p < 0.05$), and \textbf{--} indicates no statistically significant difference.}
-    \label{fig:svc-wlc-fzn2feat-scores}
-\end{figure}
+    All figures group together features extracted with the same methodology but with different aggregation steps using an alternated shaded background to improve readability.
 
-\subsection{Borda Count Score Maximization}\label{sec:borda-cout}
-In this task, we compare three sequential solvers: \texttt{OR-Tools} \cite{or-tools}, \texttt{Chuffed} \cite{chuffed}, and \texttt{CPLEX} \cite{Nickel2022-eb} on the 300 instances. Scores were assigned based on the Borda count strategy used in the MiniZinc Challenge.\footnote{\url{https://www.minizinc.org/challenge/2025/}} \todo{for self containment provide more details, e.g., run for X} We framed this as a classification problem where the target label is the solver achieving the highest score. 
+    \begin{figure}[t]
+      \centering
+      \noindent
+      \includegraphics[width=.7\linewidth]{figures/wl_score_svc.pdf}
+      \centering
+      \noindent
+      % \vspace{-2.6\baselineskip} % Adjust this value as needed
+      \resizebox{.7\linewidth}{!}{%
+        \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
+          \cline{0-13}
+          & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wl-nc-1 & wl-nc-2 & wlc-ne-1 & wlce-2 & fzn2feat \\
+          \cline{0-13}
+          wl-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wl-2 & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wle-1 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wle-2 & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wln-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wln-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wlne-1 & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wlne-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} \\
+          wlc-n-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlc-n-n-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlc-ne-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlc-ne-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          fzn2feat & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textbf{--} \\
+          \cline{0-13}
+        \end{tabular}%
+      }
+      \caption{Performance results for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features for the Borda count maximization task. Scores (top) are normalized as $S_{norm} = \frac{S - S_{sbs}}{S_{vbs} - S_{sbs}}$, where $S$ is the model score, $S_{sbs}$ is the Single Best Solver, and $S_{vbs}$ is the Virtual Best Solver. The statistical significance table (bottom) indicates results compared to the baseline using a Wilcoxon signed-rank test ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance ($p < 0.05$), \textcolor{ForestGreen}{\checkmark} denotes significantly better performance ($p < 0.05$), and \textbf{--} indicates no statistically significant difference.}
+      \label{fig:svc-wlc-fzn2feat-scores}
+    \end{figure}
 
-We excluded one trivially unsatisfiable instance from which features could not be extracted, as well as instances where no solver reached a solution. The final dataset comprised 289 instances. Evaluation consisted of 10 repetitions of 5-fold cross-validation (50 total trials). We employed \texttt{StratifiedKFold} from Scikit-learn\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html}}, stratifying based on the performance gap between the Virtual Best Solver (VBS) and the worst-performing solver in the portfolio.
+    \subsection{Borda Count Score Maximization}\label{sec:borda-cout}
+    In this task, we compare three sequential solvers: \texttt{OR-Tools} \cite{or-tools}, \texttt{Chuffed} \cite{chuffed}, and \texttt{CPLEX} \cite{Nickel2022-eb} on the 300 instances. Scores were assigned based on the Borda count strategy used in the MiniZinc Challenge.\footnote{\url{https://www.minizinc.org/challenge/2025/}} We framed this as a classification problem where the target label is the solver achieving the highest score. The results and Borda count scores reflect only the solver execution time, excluding feature extraction costs. This was a deliberate choice due to the current sub-optimal optimization of the extraction process. A detailed analysis of these costs is provided in Section \ref{sec:extraction-cost}
 
-Figure \ref{fig:svc-wlc-fzn2feat-scores} illustrates the performance of SVM models trained on \texttt{WL}-based features. While all feature sets generally outperformed the baseline, incorporating node information (\texttt{WLn}) yielded a significant performance increase over standard \texttt{WL} features. Conversely, edge information (\texttt{WLe}) provided no substantial predictive signal. Combining node and edge attributes (\texttt{WLne}) did not further improve results beyond the node-only baseline. 
+    We excluded one trivially unsatisfiable instance from which features could not be extracted, as well as instances where no solver reached a solution. The final dataset comprised 289 instances. We employed \texttt{StratifiedKFold} from Scikit-learn\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html}}, stratifying based on the performance gap between the Virtual Best Solver (VBS) and the worst-performing solver in the portfolio.
 
-Notably, features derived from the cut-based representation (\texttt{WLc} and \texttt{WLce}) significantly outperformed all other variants. The number of aggregation steps had negligible impact on final performance across all feature sets. Although \texttt{WLc-1} was the only configuration to consistently exceed the baseline ($> 1$), the performance differences between various cut-based features were not statistically significant, likely due to high variance inherent in the task. Finally, also in Figure \ref{fig:svc-wlc-fzn2feat-scores}, all cut-based models statistically outperformed the \texttt{fzn2feat} baseline.\todo{say what significant test was used and the p-value}
+    Figure \ref{fig:svc-wlc-fzn2feat-scores} illustrates the performance of SVM models trained on \texttt{WL}-based features. While all feature sets generally outperformed the baseline, incorporating node information (\texttt{WLn}) yielded a significant performance increase over standard \texttt{WL} features. Conversely, edge information (\texttt{WLe}) provided no substantial predictive signal. Combining node and edge attributes (\texttt{WLne}) did not further improve results beyond the node-only baseline.
 
-Since RF and MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features, we provide their comprehensive comparisons in the Appendix. We will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models.
+    Notably, features derived from the cut-based representation (\texttt{WLc-n} and \texttt{WLc-ne}) significantly outperformed all other variants. The number of aggregation steps had negligible impact on final performance across all feature sets. Although \texttt{WLc-n-1} was the only configuration to consistently exceed the baseline ($> 1$), the performance differences between various cut-based features were not statistically significant, likely due to high variance inherent in the task. Finally, also in Figure \ref{fig:svc-wlc-fzn2feat-scores}, all cut-based models statistically outperformed the \texttt{fzn2feat} baseline according to the Wilcoxon signed-rank test with p values between 0.002 (\texttt{WLc-n-1}) and 0.03 (\texttt{WLc-ne-1}).
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_forest.pdf}
-    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_nn.pdf}
-    \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against the \texttt{fzn2feat} baseline for the Borda count maximization task. Scores are normalized relative to the Single Best Solver and Virtual Best Solver. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
-    \label{fig:forest-nn-wlc-fzn2feat-scores}
-\end{figure}
+    MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features. On the other hand, RF ones show increasing when adding the node information but not a significant jump between \texttt{WLn}/\texttt{Wlne} features and the Cut ones and all classifiers have similar performance. For readability purposes and since Cut features are either on par or better than their non-cut counterpart, We will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models. We will provide their comprehensive comparison in the Appendix.
 
-Figure \ref{fig:forest-nn-wlc-fzn2feat-scores} illustrates the comparative performance of RF and MLP models. For the RF, \texttt{fzn2feat} achieves marginally higher scores than the cut-based features with the exception of \texttt{WLce-2} which still presents slightly higher mean and median scores, though these differences are not statistically significant ($p > 0.5$). In the MLP evaluation, only \texttt{WLc-2} significantly outperforms \texttt{fzn2feat} ($p = 0.04$), while the improvement for \texttt{WLc-1} is marginal and falls outside the significance threshold ($p = 0.054$). 
+    \begin{figure}[t]
+      \centering
+      \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_forest.pdf}
+      \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_score_nn.pdf}
+      \caption{Comparative performance of cut-based features (\texttt{WLc-n/WLc-ne}) against the \texttt{fzn2feat} baseline for the Borda count maximization task. Scores are normalized relative to the Single Best Solver and Virtual Best Solver. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
+      \label{fig:forest-nn-wlc-fzn2feat-scores}
+    \end{figure}
 
-Finally, we conducted a cross-model comparison between the best-performing \texttt{fzn2feat} configuration (RF) and the best cut-based configuration (SVM). No statistically significant difference was observed, with the lowest recorded $p$-value being $0.33$. However, it is noteworthy that all cut-based feature sets yielded higher mean and median scores than \texttt{fzn2feat} across these comparisons but with limited effect size (Cohen's d\cite{Diener2010-rf} $<0.2$) indicates that the high variance inherent in solver performance on the MiniZinc Challenge instances remains a dominant factor.
+    Figure \ref{fig:forest-nn-wlc-fzn2feat-scores} illustrates the comparative performance of RF and MLP models. For the RF, \texttt{fzn2feat} achieves marginally higher scores than the cut-based features with the exception of \texttt{WLc-ne-2} which still presents slightly higher mean and median scores, though these differences are not statistically significant ($p > 0.5$). In the MLP evaluation, all cut-based features beat the \texttt{fzn2feat} baseline while still falling slightly outside the statistical significance range with p values ranging from 0.5 to 0.6.
 
-Finally, it is noteworthy to point out that we deliberately decided to exclude the feature extraction cost from the results since our current implementation of the feature extraction isn't well optimised and its performance are sub-optimal. A more detailed discussion about it can be found in Section \ref{sec:extraction-cost}.
-\todo{questo qua non si capisce. NOn hai mai parlato ci costi di estrazione. Considera non dire nulla qui e dire tutto dopo}
+    \begin{table}
+      \centering
+      \begin{tabular}{lccc}
+        \toprule
+        & Mean & Median & P value vs \texttt{fzn2feat} \\
+        \midrule
+        \texttt{fzn2feat} & 0.45 & 0.47 & n.a. \\
 
-\subsection{Algorithm Selection with Accuracy Maximisation}
-The setup for this task was the same as for the borda count maximisation one (in Section \ref{sec:borda-cout}) with the only difference being the objective of the task which changes from maximising the score of the portfolio to maximising predictive accuracy. This change will allow us to use different statistical tests such as the Mcnemar test \cite{Smith2020-cb}. In this task, the baseline to beat is the majority classifier which always predicts the most frequent label.
+        \texttt{Wlc-n-1} & 0.48 & 0.51 & 0.37 \\
+        \texttt{Wlc-n-2} & 0.47 & 0.50 & 0.34 \\
 
+        \texttt{Wlc-ne-1} & 0.46 & 0.51 & 0.33 \\
+        \texttt{Wlc-ne-2} & 0.48 & 0.48 & 0.46 \\
+        \bottomrule
+      \end{tabular}
+      \caption{Mean and median results of cut features and \texttt{fzn2feat} as well as p value computed with the Wilcoxon test. Results show the best performing scores obtained using SVM for cut features and RF for \texttt{fzn2feat}.}
+      \label{tab:summary-results}
+    \end{table}
 
-The experimental configuration for this task mirrors the Borda count maximization setup (Section \ref{sec:borda-cout}), with the objective shifted to maximizing predictive accuracy. This change of objective was also reflected in the stratification strategy which is based on the final label instead of the gap. This shift allows for the application of additional statistical evaluations, specifically the McNemar test \cite{Smith2020-cb}, to assess the significance of differences in classifier performance. In this context, the baseline for comparison is the ZeroR (majority) classifier, which consistently predicts the most frequent class label in the training set.\todo{repetition for prevsious end of paragraph. We can say that we use the test because it is more appropriate for accuracy comparisons and it is standard.}
+    Finally, we conducted a cross-model comparison between the best-performing \texttt{fzn2feat} configuration and the best cut-based configuration (SVM) (mean). The results are summarised in Table \ref{tab:summary-results}. No statistically significant difference was observed, however, it is noteworthy that all cut-based feature sets yielded higher mean and median scores than \texttt{fzn2feat} across these comparisons but with limited effect size (Cohen's d\cite{Diener2010-rf} $<0.2$) indicates that the high variance inherent in solver performance on the MiniZinc Challenge instances remains a dominant factor.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=.7\linewidth]{figures/wl_accuracy_svc.pdf}
-    \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features. Statistical significance relative to the majority classifier (MC) baseline is determined via Wilcoxon signed-rank and McNemar tests ($\alpha = 0.05$). Significance between the cut-based features and \texttt{fzn2feat} was evaluated using McNemar and Wilcoxon signed-rank tests ($p < 0.01$).}
-    \label{fig:svc-accuracy}
-\end{figure}
+    \subsection{Algorithm Selection with Accuracy Maximisation}
+    The setup for this task was the same as for the borda count maximisation one (in Section \ref{sec:borda-cout}) with the only difference being the objective of the task which changes from maximising the score of the portfolio to maximising predictive accuracy. This change will allow us to use different statistical tests such as the Mcnemar test \cite{Smith2020-cb}. In this task, the baseline to beat is the majority classifier which always predicts the most frequent label.
 
-Consistent with the observations in Section \ref{sec:borda-cout}, the comparisons of \texttt{WL}-based features for SVM models (Figure \ref{fig:svc-accuracy}, right) indicate that cut-based features significantly outperform alternative variants. However, for the accuracy maximization task, the marginal benefit of incorporating node information is less pronounced than in the Borda count task. Regardless, all feature configurations demonstrate a statistically significant improvement over the majority classifier baseline.
+    The experimental configuration for this task mirrors the Borda count maximization setup (Section \ref{sec:borda-cout}), with the objective shifted to maximizing predictive accuracy. This change of objective was also reflected in the stratification strategy which is based on the final label instead of the gap. This shift allows for the application of additional statistical evaluations, specifically the McNemar test \cite{Smith2020-cb}, to assess the significance of differences in classifier performance.
 
-When compared against the \texttt{fzn2feat} baseline (Figure \ref{fig:svc-accuracy}, left), cut-based features exhibit significantly higher accuracy. This performance gain is confirmed by both McNemar and Wilcoxon signed-rank tests, with $p$-values below $0.01$. Conversely, inter-model comparisons between the various cut-based feature sets do not yield statistically significant differences.
+    \begin{figure}[t]
+      \centering
+      \includegraphics[width=.7\linewidth]{figures/wl_accuracy_svc.pdf}
+      \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features. Statistical significance relative to the majority classifier (MC) baseline is determined via Wilcoxon signed-rank and McNemar tests ($\alpha = 0.05$). Significance between the cut-based features and \texttt{fzn2feat} was evaluated using McNemar and Wilcoxon signed-rank tests ($p < 0.01$).}
+      \label{fig:svc-accuracy}
+    \end{figure}
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_forest.pdf}
-    \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_nn.pdf}
-    \caption{Comparative performance of cut-based features (\texttt{WLc/WLce}) against \texttt{fzn2feat} and the majority classifier (MC) baseline. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
-    \label{fig:forest-nn-wlc-fzn2feat-accuracy}
-\end{figure}
+    Consistent with the observations in Section \ref{sec:borda-cout}, the comparisons of \texttt{WL}-based features for SVM models (Figure \ref{fig:svc-accuracy}) indicate that cut-based features significantly outperform alternative variants. However, for the accuracy maximization task, the marginal benefit of incorporating node information is less pronounced than in the Borda count task. Regardless, all feature configurations demonstrate a statistically significant improvement over the majority classifier baseline.
 
-Figure \ref{fig:forest-nn-wlc-fzn2feat-accuracy} shows the performance of RF and MLP-based classifiers trained with cut-based and \texttt{fzn2feat} features. While \texttt{fzn2feat} features perform slightly better on the RF classifier, in no case there is statistical significance both with McNemar and Wilcoxon signed-rank tests.
+    When compared against the \texttt{fzn2feat} baseline (Figure \ref{fig:svc-accuracy}), cut-based features exhibit significantly higher accuracy. This performance gain is confirmed by both McNemar and Wilcoxon signed-rank tests, with $p$-values below $0.01$. Conversely, inter-model comparisons between the various cut-based feature sets do not yield statistically significant differences.
 
-When comparing the best \texttt{fzn2feat} classifier with the best cut-based ones, both \texttt{WLc-1} and \texttt{WLc-2}-based models are significantly better using the McNemar test while only the \texttt{WLc-1}-based model is better using the Wilcoxon signed-rank tests.
+    Also similarly to the results in Section \ref{sec:borda-cout}, comparisons between cut and non-cut features paired with RF yields no significant results, both accordingly to Wilcoxon and Mcnemar tests but MLP-based models show a significant improvement when paired with cut features. We show a comprehensive comparison in the Appendix while here we show only cut-based features comparisons with \texttt{fzn2feat} when paired with RF and MLP models.
 
-\subsection{Parallel Improvement Prediction}
-In this task, we evaluated the 300 instances using the \texttt{CPLEX} \cite{Nickel2022-eb} solver in both sequential and parallel (8-core) configurations. Performance was quantified using the Borda count score (consistent with Section \ref{sec:borda-cout}). We framed the task as a binary classification problem: a positive label was assigned to instances where the parallel version achieved a higher score than the sequential version, and a negative label was assigned otherwise.
+    \begin{figure}[t]
+      \centering
+      \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_forest.pdf}
+      \includegraphics[width=.44\linewidth]{figures/wl-fzn2feat_accuracy_nn.pdf}
+      \caption{Comparative performance of cut-based features (\texttt{WLc-n/WLc-ne}) against \texttt{fzn2feat} and the majority classifier (MC) baseline. Results on the left are obtained by training RF models while those on the right are obtained by training MLPs.}
+      \label{fig:forest-nn-wlc-fzn2feat-accuracy}
+    \end{figure}
 
-\begin{figure}[t]
-    \centering
-    \noindent
-    \includegraphics[width=.7\linewidth]{figures/wl_par_svc.pdf}
-    \centering
-    \noindent
-    \resizebox{.7\linewidth}{!}{%
+    Figure \ref{fig:forest-nn-wlc-fzn2feat-accuracy} shows the performance of RF and MLP-based classifiers trained with cut-based and \texttt{fzn2feat} features. While \texttt{fzn2feat} features perform slightly better on the RF classifier, in no case there is statistical significance both with McNemar and Wilcoxon signed-rank tests.
+
+    Similar non-significant results can be seen when observing the results on the MLP classifiers but, in this case, all cut-based features have better mean and average scores.
+
+    \begin{table}
+      \centering
+      \begin{tabular}{lcccc}
+        \toprule
+        & Mean & Median & P value (Wilcoxon) & P value (McNemar) \\
+        \midrule
+        \texttt{fzn2feat} &0.66 & 0.67 & n.a. & n.a. \\
+
+        \texttt{Wlc-n-1} & 0.69 & 0.68 & 0.03 & 0.00 \\
+        \texttt{Wlc-n-2} & 0.69 & 0.69 & 0.10 & 0.01 \\
+
+        \texttt{Wlc-ne-1} & 0.69 & 0.69 & 0.03 & 0.00 \\
+        \texttt{Wlc-ne-2} & 0.69 & 0.69 & 0.06 & 0.00 \\
+        \bottomrule
+      \end{tabular}
+      \caption{Mean and median results of cut features and \texttt{fzn2feat} as well as p value computed with the Wilcoxon and McNemar test. Results show the best performing scores obtained using SVM for cut features and RF for \texttt{fzn2feat}.}
+      \label{tab:summary-accuracy-results}
+    \end{table}
+
+    The biggest difference with respect to Section \ref{sec:borda-cout}, is that, in the accuracy case, comparing the best results for cut-based features (SVM) and \texttt{fzn2feat} features (RF), the cut-based features obtain significantly better results as shown in Table \ref{tab:summary-accuracy-results}, with \texttt{Wlc-n-1} and \texttt{Wlc-ne-1} showing better results both with Wilcoxon and McNemar while \texttt{Wlc-n-2} and \texttt{Wlc-ne-2} only showing statistical improvements only with the McNemar test.
+
+    \subsection{Parallel Improvement Prediction}
+    In this task, we evaluated the 300 instances using the \texttt{CPLEX} \cite{Nickel2022-eb} solver in both sequential and parallel (8-core) configurations. Performance was quantified using the Borda count score (consistent with Section \ref{sec:borda-cout}). We framed the task as a binary classification problem: a positive label was assigned to instances where the parallel version achieved a higher score than the sequential version, and a negative label was assigned otherwise.
+
+    \begin{figure}[t]
+      \centering
+      \noindent
+      \includegraphics[width=.7\linewidth]{figures/wl_par_svc.pdf}
+      \centering
+      \noindent
+      \resizebox{.7\linewidth}{!}{%
         \begin{tabular}{|c|c|c|c|c|c|c|c|c|c|c|c|c|c|c|}
-            \cline{0-14}
-            & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-1 & wlc-2 & wlce-1 & wlce-2 & fzn2feat & MC \\
-            \cline{0-14}
-            wl-1 & \textbf{--} &  & \textbf{--} &  & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
-            wl-2 &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\
-            wle-1 & \textbf{--} &  & \textbf{--} &  & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
-            wle-2 &  &  &  &  &  &  &  &  &  &  &  &  &  &  \\
-            wln-1 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wln-2 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlne-1 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlne-2 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlc-1 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlc-2 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlce-1 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            wlce-2 & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            fzn2feat & \textcolor{ForestGreen}{\checkmark} &  & \textcolor{ForestGreen}{\checkmark} &  & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
-            MC & \textcolor{red}{$\times$} &  & \textcolor{red}{$\times$} &  & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textbf{--} \\
-            \cline{0-14}
+          \cline{0-14}
+          & wl-1 & wl-2 & wle-1 & wle-2 & wln-1 & wln-2 & wlne-1 & wlne-2 & wlc-n-1 & wlc-n-2 & wlc-ne-1 & wlc-ne-2 & fzn2feat & MC \\
+          \cline{0-14}
+          wl-1 & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
+          wl-2 & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
+          wle-1 & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
+          wle-2 & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{ForestGreen}{\checkmark} \\
+          wln-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wln-2 & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlne-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlne-2 & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlc-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlc-2 & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{red}{$\times$} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlce-1 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          wlce-2 & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          fzn2feat & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textcolor{ForestGreen}{\checkmark} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textbf{--} & \textcolor{ForestGreen}{\checkmark} \\
+          MC & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textcolor{red}{$\times$} & \textbf{--} \\
+          \cline{0-14}
         \end{tabular}
-    }
-    \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features relative to the majority classifier (MC) baseline (top). The significance table (bottom) reports pairwise comparisons using McNemar and Wilcoxon signed-rank tests ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance, \textcolor{ForestGreen}{\checkmark} denotes significantly better performance, and \textbf{--} indicates no statistically significant difference.}
-    \label{fig:svc-par}
-\end{figure}
+      }
+      \caption{Predictive accuracy for SVM models trained on \texttt{WL}-based and \texttt{fzn2feat} features relative to the majority classifier (MC) baseline (top). The significance table (bottom) reports pairwise comparisons using McNemar and Wilcoxon signed-rank tests ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance, \textcolor{ForestGreen}{\checkmark} denotes significantly better performance, and \textbf{--} indicates no statistically significant difference.}
+      \label{fig:svc-par}
+    \end{figure}
 
-Figure \ref{fig:svc-par} illustrates the comparative accuracy of \texttt{WL}-based and \texttt{fzn2feat} features against the MC baseline, alongside the corresponding statistical significance results. In contrast to previous tasks, while all feature sets outperform the MC baseline, most node-informed \texttt{WL} features and \texttt{fzn2feat} exhibit comparable performance. Notably, \texttt{WLne-1} features outperform the \texttt{WLc-2} set in this instance, though they demonstrate no statistically significant improvement over \texttt{fzn2feat}.
+    Figure \ref{fig:svc-par} illustrates the comparative accuracy of \texttt{WL}-based and \texttt{fzn2feat} features against the MC baseline, alongside the corresponding statistical significance results when paired with SVM models. In contrast to previous tasks, while all feature sets outperform the MC baseline, most node-informed \texttt{WL} features and \texttt{fzn2feat} exhibit comparable performance. Notably, \texttt{WLne-1} features outperform the \texttt{WLc-n-2} set in this instance, though they demonstrate no statistically significant improvement over \texttt{fzn2feat}.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=.44\textwidth]{figures/par_forest.pdf}
-    \includegraphics[width=.44\textwidth]{figures/par_nn.pdf}
-    \caption{Comparative accuracy of \texttt{WL}-based features against \texttt{fzn2feat} and the MC baseline. Left: 
-    RF results. Right: MLP results.}
-    \label{fig:nn-forest-par}
-\end{figure}
+    \begin{figure}[t]
+      \centering
+      \includegraphics[width=.44\textwidth]{figures/par_forest.pdf}
+      \includegraphics[width=.44\textwidth]{figures/par_nn.pdf}
+      \caption{Comparative accuracy of \texttt{WL}-based features against \texttt{fzn2feat} and the MC baseline. Left:
+      RF results. Right: MLP results.}
+      \label{fig:nn-forest-par}
+    \end{figure}
 
-Similar trends are observed when utilizing RF and MLP classifiers (Figure \ref{fig:nn-forest-par}). While MLP models achieved the highest overall accuracy for both \texttt{WL}-based features and \texttt{fzn2feat}, no statistically significant differences were found between the various feature sets. Conversely, for the RF models, \texttt{fzn2feat} significantly underperformed, yielding statistically worse results compared to the \texttt{WL}-based feature sets.
+    Similar trends are observed when utilizing RF and MLP classifiers (Figure \ref{fig:nn-forest-par}). While MLP models achieved the highest overall accuracy for both \texttt{WL}-based features and \texttt{fzn2feat}, no statistically significant differences were found between the cut-based feature sets and \texttt{fzn2feat}. Differently from the SVM case, for MLP classifiers cut-based features significantly outperform \texttt{WLn} and \texttt{WLne} features. Conversely, for the RF models, \texttt{fzn2feat} significantly underperformed, yielding statistically worse results compared to the \texttt{WL}-based feature sets.
 
-\subsection{Feature Extraction Cost}\label{sec:extraction-cost}
-The computational overhead for extracting cut-based features compared to \texttt{fzn2feat} is illustrated in Figure \ref{fig:extraction-time}. Because both methodologies necessitate a preliminary compilation from MiniZinc to FlatZinc, we exclude compilation time from the reported extraction costs to isolate the performance of the feature generators themselves. 
+    \subsection{Feature Extraction Cost}\label{sec:extraction-cost}
+    The computational overhead for extracting cut-based features compared to \texttt{fzn2feat} is illustrated in Figure \ref{fig:extraction-time}. Because both methodologies necessitate a preliminary compilation from MiniZinc to FlatZinc, we exclude compilation time from the reported extraction costs to isolate the performance of the feature generators themselves.
 
-While \texttt{fzn2feat} exhibits lower absolute extraction times, the vast majority of instances require less than one second even when utilizing cut-based features. It is important to note that the current implementation of the \texttt{WL} feature extraction pipeline (comprising graph conversion and Weisfeiler-Lehman aggregation) is not fully optimized. Significant performance gains could be realized through algorithmic refinements and the parallelization of independent graph operations, further reducing the overhead for large-scale instance sets.
+    While \texttt{fzn2feat} exhibits lower absolute extraction times, the vast majority of instances require less than one second even when utilizing cut-based features. It is important to note that the current implementation of the \texttt{WL} feature extraction pipeline (comprising graph conversion and Weisfeiler-Lehman aggregation) is not fully optimized. Significant performance gains could be realized through algorithmic refinements and the parallelization of independent graph operations, further reducing the overhead for large-scale instance sets.
 
-\begin{figure}[t]
-    \centering
-    \includegraphics[width=.9\linewidth]{figures/feature_extraction.pdf}
-    \caption{Feature extraction cost comparison between \texttt{WLc}/\texttt{WLce} and \texttt{fzn2feat}. The distribution of extraction times (left) is supplemented by pairwise performance comparisons (center, right).}
-    \label{fig:extraction-time}
-\end{figure}
+    \begin{figure}[t]
+      \centering
+      \includegraphics[width=.9\linewidth]{figures/feature_extraction.pdf}
+      \caption{Feature extraction cost comparison between \texttt{WLc-n}/\texttt{WLc-ne} and \texttt{fzn2feat}. The distribution of extraction times (left) is supplemented by pairwise performance comparisons (center, right). The blu line correspond to x = y.}
+      \label{fig:extraction-time}
+    \end{figure}
