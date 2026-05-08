@@ -9,7 +9,7 @@ order = {
     k:i for i,k in enumerate(['fzn2feat', 'wl-1', 'wl-2', 'wle-1', 'wle-2', 'wln-1', 'wln-2', 'wlne-1', 'wlne-2', 'wlc-1', 'wlc-2', 'wlce-1', 'wlce-2', 'majority_classifier'])
 }
 
-def get_as_results(result_folder:str) -> dict[str,dict[str, float]]:
+def get_as_results(result_folder:str, all_levels:bool=False) -> dict[str,dict[str, float]]:
     '''
     Function to load algorithm selection (scores) results from a specific folder.
     '''
@@ -17,6 +17,8 @@ def get_as_results(result_folder:str) -> dict[str,dict[str, float]]:
     as_results = {}
     for file in os.listdir(result_folder):
         if not file.startswith("as_"):
+            continue
+        if "alllevels" in file and not all_levels:
             continue
         if 'forest' in file:
             name_split = file.replace("as_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
@@ -34,7 +36,12 @@ def get_as_results(result_folder:str) -> dict[str,dict[str, float]]:
         if feature_names not in as_results:
             as_results[feature_names] = {}
         as_results[feature_names][fold] = (content['clf_score'] - content['cp-sat_score']) / (content['vbs_score'] - content['cp-sat_score'])
+    if all_levels:
+        return as_results
     return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
+
+
+
 
 def to_table(data, wsbs=True):
     '''
@@ -54,10 +61,12 @@ def to_table(data, wsbs=True):
     df['Min']       = df[data_cols].min(axis=1)
     return df[['Mean', 'Median', 'Std', 'Max', 'Min'] + (['Worse_sbs'] if wsbs else [])]
 
-def get_as_accuracy_results(result_folder):
+def get_as_accuracy_results(result_folder:str, all_levels:bool=False):
     as_results = {'majority_classifier': {}}
     for file in os.listdir(result_folder):
         if not file.startswith("as-accuracy_"):
+            continue
+        if "alllevels" in file and not all_levels:
             continue
         if 'forest' in file:
             name_split = file.replace("as-accuracy_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
@@ -80,6 +89,8 @@ def get_as_accuracy_results(result_folder):
             as_results['majority_classifier'][fold] = accuracy_score(
                 [p['true'] for p in content['predictions'].values()], 
                 [0 for _ in content['predictions']])
+    if all_levels:
+        return as_results
     return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
 
 def combine_algorithm_selection_score(result_1:str, result_2:str, dataset:str, result_3:str|None=None) -> float:
@@ -217,13 +228,13 @@ def compare_as_accuracy_results(comb1:tuple[str, str], comb2:tuple[str, str], ba
     
     return accuracy_score(trues, c1), accuracy_score(trues, c2), compute_mcnemar(comparison_dicts)
 
-def get_parallel_results(result_folder):
-    as_results = {}
+def get_parallel_results(result_folder:str, all_levels:bool=False):
+    par_results = {}
     for file in os.listdir(result_folder):
         if not file.startswith("par_"):
             continue
-        # if not "123" in file:
-        #     continue
+        if "alllevels" in file and not all_levels:
+            continue
         if 'forest' in file:
             name_split = file.replace("par_", "").replace("-rnd-forest", "").replace("-forest", "").replace(".json", "").split("-")
         elif 'svc' in file:
@@ -235,11 +246,11 @@ def get_parallel_results(result_folder):
         # print(name_split, fold, feature_names)
         with open(os.path.join(result_folder, file)) as f:
             content = json.load(f)
-        if feature_names not in as_results:
-            as_results[feature_names] = {}
-        as_results[feature_names][fold] = content['accuracy']
+        if feature_names not in par_results:
+            par_results[feature_names] = {}
+        par_results[feature_names][fold] = content['accuracy']
     feature_names = 'majority_classifier'
-    as_results[feature_names] = {}
+    par_results[feature_names] = {}
     for file in os.listdir(result_folder):
         if not file.startswith("par_"):
             continue
@@ -256,8 +267,10 @@ def get_parallel_results(result_folder):
             content = json.load(f)
         trues = [v['true'] for v in content['predictions'].values()]
         pred = [1 for _ in content['predictions'].values()]
-        as_results[feature_names][fold] = accuracy_score(trues, pred)
-    return {k:v for k,v in sorted(as_results.items(), key= lambda x: (order[x[0].replace('-max', '').replace('-min', '')], 0 if '-min' in x[0] else 1))}
+        par_results[feature_names][fold] = accuracy_score(trues, pred)
+    if all_levels:
+        return par_results
+    return {k:v for k,v in sorted(par_results.items(), key= lambda x: (order[x[0].replace('-max', '').replace('-min', '')], 0 if '-min' in x[0] else 1))}
 
 
 def compare_par_results(comb1:tuple[str, str], comb2:tuple[str, str], base_folder:str) -> tuple[float, float, float]:
