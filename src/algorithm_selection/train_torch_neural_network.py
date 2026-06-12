@@ -17,6 +17,7 @@ from torch.utils.data import DataLoader, TensorDataset
 
 from common.torch_mlp import TorchMLPWrapper
 
+LAYER_SIZE = (150, 200, 150)
 
 def cross_val_score(clf, X:np.ndarray, y:np.ndarray, scores:np.ndarray, cv:int=5) -> float:
     kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
@@ -42,16 +43,13 @@ def cross_val_score(clf, X:np.ndarray, y:np.ndarray, scores:np.ndarray, cv:int=5
 
     return float(np.mean(pred_scores))
 
-def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, scores:np.ndarray, use_gpu:bool=False) -> dict:
+def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, scores:np.ndarray) -> dict:
     np.random.seed(42)
     random.seed(42)
     torch.manual_seed(42)
 
-    features = X.shape[1]
-    layer_sizes = (features, features * 2, features, features // 2)
-
-    device = 'cuda' if use_gpu else 'auto'
-    model = TorchMLPWrapper(**params, hidden_layer_sizes=layer_sizes, device=device)
+    device = 'auto'
+    model = TorchMLPWrapper(**params, hidden_layer_sizes=LAYER_SIZE, device=device)
     score = cross_val_score(model, X, y, scores, cv=3)
     return {"params": params, "score": score}
 
@@ -60,7 +58,6 @@ def find_hyperparameters_nn_torch(
     y: np.ndarray,
     scores:np.ndarray,
     n_jobs: int,
-    use_gpu:bool=False
     ) -> dict:
 
     param_grid = {
@@ -77,7 +74,7 @@ def find_hyperparameters_nn_torch(
 
     n_workers = n_jobs
 
-    worker_fn = partial(_evaluate_combination, X=X, y=y, scores=scores, use_gpu=use_gpu)
+    worker_fn = partial(_evaluate_combination, X=X, y=y, scores=scores)
 
     # Run in parallel
     results = []
@@ -179,7 +176,7 @@ def test_nn_torch(clf, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict
         'hyperparameters': hyperparam
         }
 
-def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True, use_gpu:bool=False) -> dict:
+def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], hyperparams:None|dict=None) -> dict:
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
@@ -192,12 +189,13 @@ def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], is_wl:b
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
-    hyperparam = find_hyperparameters_nn_torch(X_train, y_train, scores, 1, use_gpu=use_gpu)
-    features = X_train.shape[1]
-    layer_sizes = (features, features * 2, features, features // 2)
+    if hyperparams is None:
+        hyperparam = find_hyperparameters_nn_torch(X_train, y_train, scores, 1)
+    else:
+        hyperparam = hyperparams
 
-    device = 'cuda' if use_gpu else 'auto'
-    clf = TorchMLPWrapper(**hyperparam, hidden_layer_sizes=layer_sizes, device=device)
+    device = 'auto'
+    clf = TorchMLPWrapper(**hyperparam, hidden_layer_sizes=LAYER_SIZE, device=device)
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, scores, cv=3)))
 

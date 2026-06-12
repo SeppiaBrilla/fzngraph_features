@@ -186,12 +186,11 @@ def test_svc(clf:SVC, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict]
         'hyperparameters': hyperparam
         }
 
-def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
+def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True, hyperparam:None|dict=None) -> dict:
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
     y_train = np.array([e['label'] for e in train_data])
-    # times = np.array([[e['chuffed'], e['cp-sat'], e['cp-sat']] for e in train_data])
     scores = np.array([[e['cp-sat'], e['chuffed'], e['cplex']] for e in train_data])
     X_test = np.array([e['features'] for e in test_data])
     y_test = np.array([e['label'] for e in test_data])
@@ -206,27 +205,15 @@ def train_and_test_svc(train_data:list[dict], test_data:list[dict], is_wl:bool=T
     X_train = X_train[:, sorted_indices]
     X_test  = X_test[:, sorted_indices]
 
-    hyperparam = find_hyperparameters(X_train, y_train, scores, 5)
-    size = find_size(X_train, y_train, scores, hyperparam, is_wl)
-    # size = None
-    if not size is None:
-        pca = PCA(n_components=size, random_state=42)
-        X_train = pca.fit_transform(X_train)
-        X_test = pca.transform(X_test)
-
-        min_max = MinMaxScaler()
-        X_train = min_max.fit_transform(X_train)
-        X_test = min_max.transform(X_test)
-
-
+    if not hyperparam:
+        print('new hyperparam', hyperparam)
+        n_jobs_val = 10
+        hyperparam = find_hyperparameters(X_train, y_train, scores, n_jobs_val)
+        # size = find_size(X_train, y_train, scores, hyperparam, is_wl)
     clf = SVC(**hyperparam, class_weight={0: 1, 1: 1, 2: 1})
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, scores, cv=5)))
-    hyperparam['size'] = size
 
-    # weights = np.abs(times[:, 0] - times[:, 1])
-    # weights = 1 + weights / np.max(weights)
-
-    clf.fit(X_train, y_train)#, sample_weight=weights)
+    clf.fit(X_train, y_train)
     test_svc(clf, X_train, y_train, train_data, hyperparam)
     return test_svc(clf, X_test, y_test, test_data, hyperparam)

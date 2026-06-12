@@ -70,7 +70,7 @@ class TorchMLPWrapper(BaseEstimator, ClassifierMixin):
         optimizer = optim.Adam([
             {'params': weights, 'weight_decay': self.alpha / n_samples},
             {'params': biases, 'weight_decay': 0.0}
-        ], lr=0.001)
+        ], lr=0.01)
         
         criterion = nn.CrossEntropyLoss()
         

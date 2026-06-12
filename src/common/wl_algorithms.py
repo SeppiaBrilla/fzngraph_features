@@ -8,9 +8,41 @@ try:
 except:
     from graph_loader import Graph
 
+def get_effective_domain_size(domain: str, type_str: str) -> int:
+    if type_str == 'bool' or domain in ['bool', 'false..true', 'true..false']:
+        return 2
+    if 'set' in type_str:
+        if '..' in domain:
+            parts = domain.split('..')
+            try:
+                return abs(int(parts[1]) - int(parts[0])) + 1
+            except ValueError:
+                pass
+        if domain.startswith('{') and domain.endswith('}'):
+            content = domain[1:-1].strip()
+            if not content:
+                return 0
+            return len(content.split(','))
+        try:
+            return int(domain)
+        except ValueError:
+            return 1
+    if '..' in domain:
+        parts = domain.split('..')
+        try:
+            return abs(int(parts[1]) - int(parts[0])) + 1
+        except ValueError:
+            pass
+    try:
+        int(domain)
+        return 1
+    except ValueError:
+        pass
+    return 1
+
 COLORS = {}
 
-def standard_wl(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def standard_wl(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements the standard wl algorithm wihout taking into account neither node types nor edge types
     """
@@ -44,20 +76,9 @@ def standard_wl(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, m
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
     return levels
 
-def wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements thewl algorithm taking into account node types as features
     """
@@ -91,33 +112,16 @@ def wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bo
                     if not uc in colors:
                         colors[uc] = str(hash(uc))
 
-        # if not training:
-        #     if any(not uc in colors for uc in updated_colors):
-        #         out += sum([1 if not uc in colors else 0 for uc in updated_colors])
         new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
         iter += 1
         changed = not node_colors == new_node_colors
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
-    # if not training:
-    #     print(out)
-    #     print('===================')
     return levels
 
 
-def undirected_wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def undirected_wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements thewl algorithm taking into account node types as features
     """
@@ -133,7 +137,6 @@ def undirected_wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, 
 
     changed = True
     iter = 0
-    # out = 0
     while changed and iter < max_iter:
         neighbour_colors = [[] for _ in node_colors]
         for (_from, _to), _ in graph.edge_iterator:
@@ -152,32 +155,15 @@ def undirected_wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, 
                     if not uc in colors:
                         colors[uc] = str(hash(uc))
 
-        # if not training:
-        #     if any(not uc in colors for uc in updated_colors):
-        #         out += sum([1 if not uc in colors else 0 for uc in updated_colors])
         new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
         iter += 1
         changed = not node_colors == new_node_colors
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
-    # if not training:
-    #     print(out)
-    #     print('===================')
     return levels
 
-def wl_with_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def wl_with_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements thewl algorithm taking into account edge types as features
     """
@@ -212,20 +198,9 @@ def wl_with_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bo
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
     return levels
 
-def wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements thewl algorithm taking into account node and edge types as features
     """
@@ -264,20 +239,9 @@ def wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, tr
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
     return levels
 
-def undirected_wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None, with_neighbours:bool=False) -> list[int]|list[list[int]]:
+def undirected_wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
     """
     implements thewl algorithm taking into account node and edge types as features
     """
@@ -317,20 +281,9 @@ def undirected_wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter
         node_colors = new_node_colors
         levels.append([int(c) for c in node_colors])
 
-    if with_neighbours:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-        levels[-1] = [
-            [int(node_colors[i])] + [int(c) for c in sorted(neighbour_colors[i])] for i in range(len(neighbour_colors))
-        ]
-        return levels
-
     return levels
 
-def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
+def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[list[int]],dict]:
     node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
     node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
     for uc in sorted(set(node_colors)):
@@ -395,9 +348,9 @@ def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool
             colors[color] = str(hash(color))
         if color in colors:
             node_colors[node_colors.index(h)] = str(hash(color))
-    
+
     levels_list[-1] = [int(c) for c in node_colors]
-    
+
     extra_info = {
         'levels': levels,
         'globals_pairs': pairs,
@@ -472,7 +425,7 @@ def undirected_wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, tr
             colors[color] = str(hash(color))
         if color in colors:
             node_colors[node_colors.index(h)] = str(hash(color))
-    
+
     extra_info = {
         'levels': levels,
         'globals_pairs': pairs,
@@ -480,10 +433,11 @@ def undirected_wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, tr
         'cpp': constraints_per_par / n_par,
         'n_nodes': len(graph.nodes)
     }
+
     return  [int(c) for c in node_colors], extra_info
 
 
-def wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
+def wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[list[int]],dict]:
     node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
     node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
     for uc in sorted(set(node_colors)):
@@ -548,9 +502,9 @@ def wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, tr
             colors[color] = str(hash(color))
         if color in colors:
             node_colors[node_colors.index(h)] = str(hash(color))
-            
+
     levels_list[-1] = [int(c) for c in node_colors]
-    
+
     extra_info = {
         'levels': levels,
         'globals_pairs': pairs,
@@ -558,6 +512,7 @@ def wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, tr
         'cpp': constraints_per_par / n_par,
         'n_nodes': len(graph.nodes)
     }
+
     return levels_list, extra_info
 
 def undirected_wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
@@ -577,7 +532,7 @@ def undirected_wl_extended_features_with_edges(graph:Graph, colors:dict, max_ite
 
     for iter in range(max_iter):
         neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
+        for (_from, _to), e in graph.edge_iterator:
             if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
                 continue
             from_idx = node_idx[_from.label]
@@ -623,7 +578,7 @@ def undirected_wl_extended_features_with_edges(graph:Graph, colors:dict, max_ite
             colors[color] = str(hash(color))
         if color in colors:
             node_colors[node_colors.index(h)] = str(hash(color))
-    
+
     extra_info = {
         'levels': levels,
         'globals_pairs': pairs,
@@ -631,6 +586,7 @@ def undirected_wl_extended_features_with_edges(graph:Graph, colors:dict, max_ite
         'cpp': constraints_per_par / n_par,
         'n_nodes': len(graph.nodes)
     }
+
     return  [int(c) for c in node_colors], extra_info
 
 
@@ -639,16 +595,15 @@ def wl_features(graph:Graph,
                 max_iter:int=10,
                 training:bool=True,
                 wl_type:Literal['standard','node_features','edge_features','node_edge_features']='standard',
-                max_colors:int|None=None,
-                with_neighbours:bool=False) -> list[int]|list[list[int]]:
+                max_colors:int|None=None) -> list[int]|list[list[int]]:
     if wl_type == 'standard':
-        return standard_wl(graph, colors, max_iter, training, max_colors, with_neighbours)
+        return standard_wl(graph, colors, max_iter, training, max_colors)
     elif wl_type == 'edge_features':
-        return wl_with_edge_features(graph, colors, max_iter, training, max_colors, with_neighbours)
+        return wl_with_edge_features(graph, colors, max_iter, training, max_colors)
     elif wl_type == 'node_features':
-        return wl_with_node_features(graph, colors, max_iter, training, max_colors, with_neighbours)
+        return wl_with_node_features(graph, colors, max_iter, training, max_colors)
     elif wl_type == 'node_edge_features':
-        return wl_with_node_and_edge_features(graph, colors, max_iter, training, max_colors, with_neighbours)
+        return wl_with_node_and_edge_features(graph, colors, max_iter, training, max_colors)
 
     raise Exception(f'unrecognised wl_type: {wl_type}')
 

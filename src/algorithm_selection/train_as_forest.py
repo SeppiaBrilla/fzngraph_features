@@ -180,7 +180,7 @@ def test_rnd_forest(clf:RandomForestClassifier, X_test:np.ndarray, y_test:np.nda
         'hyperparameters': hyperparam
         }
 
-def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True) -> dict:
+def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl:bool=True, is_wlc:bool=True, hyperparam:None|dict=None) -> dict:
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
@@ -191,25 +191,26 @@ def train_and_test_rnd_forest(train_data:list[dict], test_data:list[dict], is_wl
 
     if is_wlc:
         scaler = MinMaxScaler()
-        X_train[:,-2:] = scaler.fit_transform(X_train[:,-2:])
-        X_test[:,-2:] = scaler.transform(X_test[:,-2:])
+        X_train = scaler.fit_transform(X_train)
+        X_test = scaler.transform(X_test)
         magnitudes = np.sum(X_train, axis=0)
         sorted_indices = np.argsort(magnitudes)
 
         X_train = X_train[:, sorted_indices]
         X_test  = X_test[:, sorted_indices]
 
-    hyperparam = find_hyperparameters(X_train, y_train, scores, 10)
-    size = find_size(X_train, y_train, scores, hyperparam, is_wl)
-    if not size is None:
-        pca = PCA(n_components=size, random_state=42)
-        X_train = pca.fit_transform(X_train)
-        X_test = pca.transform(X_test)
+    if hyperparam is None:
+        hyperparam = find_hyperparameters(X_train, y_train, scores, 10)
+        # size = find_size(X_train, y_train, scores, hyperparam, is_wl)
+        # if not size is None:
+        #     pca = PCA(n_components=size, random_state=42)
+        #     X_train = pca.fit_transform(X_train)
+        #     X_test = pca.transform(X_test)
 
     clf = RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 1, 2: 1})
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, scores, cv=3)))
-    hyperparam['size'] = size
+    # hyperparam['size'] = size
 
     clf.fit(X_train, y_train)
     return test_rnd_forest(clf, X_test, y_test, test_data, hyperparam)
