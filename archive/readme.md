@@ -1,0 +1,1 @@
+This folder contains code for experiments and results that we no longer perform. They are kept just in case.
