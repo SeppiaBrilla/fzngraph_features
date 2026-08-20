@@ -38,10 +38,7 @@ def get_as_results(result_folder:str, all_levels:bool=False) -> dict[str,dict[st
         as_results[feature_names][fold] = (content['clf_score'] - content['cp-sat_score']) / (content['vbs_score'] - content['cp-sat_score'])
     if all_levels:
         return as_results
-    return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
-
-
-
+    return {k:v for k,v in sorted(as_results.items(), key= lambda x: order.get(x[0], 999))}
 
 def to_table(data, wsbs=True):
     '''
@@ -91,7 +88,7 @@ def get_as_accuracy_results(result_folder:str, all_levels:bool=False):
                 [0 for _ in content['predictions']])
     if all_levels:
         return as_results
-    return {k:v for k,v in sorted(as_results.items(), key= lambda x: order[x[0]])}
+    return {k:v for k,v in sorted(as_results.items(), key= lambda x: order.get(x[0], 999))}
 
 def combine_algorithm_selection_score(result_1:str, result_2:str, dataset:str, result_3:str|None=None) -> float:
     dataset = pd.read_csv(dataset)
