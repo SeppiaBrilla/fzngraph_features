@@ -1,8 +1,8 @@
 \section{Experimental Results}
 
-To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modelling ecosystem. We selected 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct two algorithm selection tasks: (i) maximising the Borda count score across three solvers, (ii) maximising prediction accuracy for the same solver set. Solvers were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minutes timeout.
+To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modelling ecosystem. We used the 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct two algorithm selection tasks: (i) maximising the Borda count score across three solvers, (ii) maximising prediction accuracy for the same solver set. Solvers were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minutes timeout.
 
-Our approach is compared against two baselines: a standard performance baseline and \texttt{fzn2feat}.
+Our approach is compared against two baselines: a standard performance baseline\todo{which one?} and \texttt{fzn2feat}.
 
 Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. The number of aggregation steps is appended to the features using a dash (\texttt{-}) sign (example: \texttt{Wlc-n} features with one aggregation will be \texttt{WLc-n-1}).
 
@@ -15,13 +15,13 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
       \item For RF: fewer trees and shallower maximum depth.
       \item For MLP: fewer training steps and a smaller $\alpha$ penalty.
     \end{itemize}
-  \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range $[20, \min(\text{n\_features}, \text{n\_samples})[$ with a step size of 20.
+  \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range $20$ and $\min(\text{n\_features}, \text{n\_samples})$ with a step size of 20.
       \item \textbf{Final Feature Selection:} The feature set (original or PCA-transformed) yielding the highest cross-validation score was selected for final evaluation.
     \end{enumerate}
 
     The last two steps (Dimensionality Reduction and Final Feature Selection) have been skipped for MLP classifiers due to their ability to handle high-dimensional data.
 
-    The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimisation, ensemble-based logical partitioning, and connectionist functional approximation.
+    The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimisation, ensemble-based logical partitioning, and connectionist functional approximation.\todo{I like this phrase. Consider moving it when we introduce what appraoches we are using. It is a good justification for the choice of models.}
 
     All figures group together features extracted with the same methodology but with different aggregation steps, using an alternated shaded background to improve readability.
 
@@ -57,18 +57,18 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
       % The statistical significance table (bottom) indicates results compared to the baseline using a Wilcoxon signed-rank test ($\alpha = 0.05$). Symbols: \textcolor{red}{$\times$} denotes significantly worse performance ($p < 0.05$), \textcolor{ForestGreen}{\checkmark} denotes significantly better performance ($p < 0.05$), and \textbf{--} indicates no statistically significant difference.
       }
       \label{fig:svc-wlc-fzn2feat-scores}
-    \end{figure}
+    \end{figure}\todo{define SBS and VBS and you can use this instead of $S_{sbs}$. The definitions can go when you introduce the baseline}
 
     \subsection{Borda Count Score Maximization}\label{sec:borda-cout}
-    In this task, we compare three sequential solvers: \texttt{OR-Tools} \cite{or-tools}, \texttt{Chuffed} \cite{chuffed}, and \texttt{CPLEX} \cite{Nickel2022-eb} on the 300 instances. Scores were assigned based on the Borda count strategy used in the MiniZinc Challenge.\footnote{\url{https://www.minizinc.org/challenge/2025/}} We framed this as a classification problem where the target label is the solver achieving the highest score. The results and Borda count scores reflect only the solver execution time, excluding feature extraction costs. This was a deliberate choice due to the current sub-optimal optimisation of the extraction process. A detailed analysis of these costs is provided in Section \ref{sec:extraction-cost}
+    In this task, we compare three sequential solvers: \texttt{OR-Tools} \cite{or-tools}, \texttt{Chuffed} \cite{chuffed}, and \texttt{CPLEX} \cite{Nickel2022-eb} on the 300 instances. Scores were assigned based on the Borda count strategy used in the MiniZinc Challenge.\footnote{\url{https://www.minizinc.org/challenge/2025/}} We framed this as a classification problem where the target label is the solver achieving the highest score. The results and Borda count scores reflect only the solver execution time, excluding feature extraction costs. This was a deliberate choice due to the current sub-optimal optimisation of the extraction process.\todo{move this into a footnote or even comment it out for the arxiv version. We can also state taht we wanted to be fair and focus on the info they bring and not other computational considerations} A detailed analysis of these costs is provided in Section \ref{sec:extraction-cost}
 
     We excluded one trivially unsatisfiable instance from which features could not be extracted, as well as instances where no solver reached a solution. The final dataset comprised 289 instances. We employed \texttt{StratifiedKFold} from Scikit-learn\footnote{\url{https://scikit-learn.org/stable/modules/generated/sklearn.model\_selection.StratifiedKFold.html}}, stratifying based on the performance gap between the Virtual Best Solver (VBS) and the worst-performing solver in the portfolio.
 
     Figure \ref{fig:svc-wlc-fzn2feat-scores} illustrates the performance of SVM models trained on \texttt{WL}-based features. While all feature sets generally outperformed the baseline, incorporating node information (\texttt{WLn}) yielded a significant performance increase over standard \texttt{WL} features. Conversely, edge information (\texttt{WLe}) provided no substantial predictive signal. Combining node and edge attributes (\texttt{WLne}) did not further improve results beyond the node-only baseline.
 
-    Notably, features derived from the cut-based representation (\texttt{WLc-n} and \texttt{WLc-ne}) significantly outperformed all other variants. The number of aggregation steps had a negligible impact on final performance across all feature sets. Although \texttt{WLc-n-1} was the only configuration to consistently exceed the baseline ($> 1$), the performance differences between various cut-based features were not statistically significant, likely due to high variance inherent in the task. Finally, also in Figure \ref{fig:svc-wlc-fzn2feat-scores}, all cut-based models statistically outperformed the \texttt{fzn2feat} baseline according to the Wilcoxon signed-rank test with p values between 0.002 (\texttt{WLc-n-1}) and 0.03 (\texttt{WLc-ne-1}).
+    Notably, features derived from the cut-based representation (\texttt{WLc-n} and \texttt{WLc-ne}) significantly outperformed all other variants. The number of aggregation steps had a negligible impact on final performance across all feature sets. Although \texttt{WLc-n-1} was the only configuration to consistently exceed the baseline ($> 1$),\todo{not following here} the performance differences between various cut-based features were not statistically significant, likely due to high variance inherent in the task. Finally, also in Figure \ref{fig:svc-wlc-fzn2feat-scores}, all cut-based models statistically outperformed the \texttt{fzn2feat} baseline according to the Wilcoxon signed-rank test with p values between 0.002 (\texttt{WLc-n-1}) and 0.03 (\texttt{WLc-ne-1}).
 
-    MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features. On the other hand, RF ones show an increase when adding the node information, but not a significant jump between \texttt{WLn}/\texttt{Wlne} features and the Cut ones and all classifiers have similar performance. For readability purposes and since Cut features are either on par or better than their non-cut counterpart, we will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models. We will provide their comprehensive comparison in Appendix \ref{sec:borda-scores}.
+    MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features. On the other hand, RF ones show an increase when adding the node information, but not a significant jump between \texttt{WLn}/\texttt{Wlne} features and the cut ones and all classifiers have similar performance. For readability purposes and since cut features are either on par or better than their non-cut counterpart, we will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models. We will provide their comprehensive comparison in Appendix \ref{sec:borda-scores}.
 
     \begin{figure}[t]
       \centering
@@ -156,7 +156,7 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
       \end{tabular}}
       \caption{Mean and median results of cut features and \texttt{fzn2feat}. Results show the best performing scores obtained using SVM for cut features and RF for \texttt{fzn2feat}.}
       \label{tab:summary-accuracy-results}
-    \end{table}
+    \end{table}\todo{treat this table as the others}
 
     % The biggest difference with respect to Section \ref{sec:borda-cout}, is that, in the accuracy case, comparing the best results for cut-based features (SVM) and \texttt{fzn2feat} features (RF), the cut-based features obtain significantly better results as shown in Table \ref{tab:summary-accuracy-results}, with \texttt{Wlc-n-1} and \texttt{Wlc-ne-1} showing better results both with Wilcoxon and McNemar while \texttt{Wlc-n-2} and \texttt{Wlc-ne-2} only showing statistical improvements only with the McNemar test.
 
@@ -165,7 +165,7 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
     \subsection{Feature Extraction Cost}\label{sec:extraction-cost}
     The computational overhead for extracting cut-based features compared to \texttt{fzn2feat} is illustrated in Figure \ref{fig:extraction-time}. Because both methodologies necessitate a preliminary compilation from MiniZinc to FlatZinc, we exclude compilation time from the reported extraction costs to isolate the performance of the feature generators themselves.
 
-    While \texttt{fzn2feat} exhibits lower absolute extraction times, the vast majority of instances require less than one second, even when utilising cut-based features. It is important to note that the current implementation of the \texttt{WL} feature extraction pipeline (comprising graph conversion and Weisfeiler-Lehman aggregation) is not fully optimised. Significant performance gains could be realised through algorithmic refinements and the parallelisation of independent graph operations, further reducing the overhead for large-scale instance sets.
+    While \texttt{fzn2feat} exhibits lower absolute extraction times, the vast majority of instances require less than one second, even when utilising cut-based features. It is important to note that the current implementation of the \texttt{WL} feature extraction pipeline (comprising graph conversion and Weisfeiler-Lehman aggregation) is not fully optimised. Significant performance gains could be realised through algorithmic refinements and the parallelisation of independent graph operations, further reducing the overhead for large-scale instance sets.\todo{state that this was beyond the scopres of this work}
 
     \begin{figure}[t]
       \centering
@@ -173,3 +173,5 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
       \caption{Feature extraction cost comparison between \texttt{WLc-n}/\texttt{WLc-ne} and \texttt{fzn2feat}. The distribution of extraction times (left) is supplemented by pairwise performance comparisons (centre, right). The blue line corresponds to x = y.}
       \label{fig:extraction-time}
     \end{figure}
+
+    \todo[inline]{missing a related work section? Perhaps Ok for archive but I would still improvise one (or maybe avoid to ping the ones we cite?)}

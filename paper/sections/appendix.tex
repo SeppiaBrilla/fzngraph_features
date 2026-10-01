@@ -87,6 +87,7 @@ Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models
   \caption{Node types used in our graphs converted from FlatZinc.}
   \label{tab:nodes}
 \end{table}
+\todo{not readable. Made it that spans the entire page}
 
 \section{On The Shallowness of the Graphs}\label{sec:graph-depth}
 Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints are present, and they usually differ from the type of constraint that replaces the equality (e.g. inequality, less than or equal to, etc.) The graph at this level has a diameter of 4, which is reduced to 2 when the cut is applied. Most supported constraints are, instead, quite simple, with most of them having a diameter of one or two. For the full list of supported constraints, we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
