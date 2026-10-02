@@ -1,5 +1,5 @@
 \section{Extracting Features Using The Weisfeiler-Leman Algorithm}\label{sec:feature_Extraction}
-Once we have defined how to convert any instance to a graph, we can use the WL algorithm to extract features from the graphs.\todo{why not this a subsection of section 3?}
+Once we have defined how to convert any instance to a graph, we can use the WL algorithm to extract features from the graphs.
 
 \begin{figure}[t]
     \centering
@@ -18,16 +18,16 @@ First, from a theoretical perspective, the final iteration's labels represent th
 Furthermore, the specific topology of our data justifies this approach. The extracted graphs are characterised by a shallow diameter and directed edges, which significantly limit the depth of information flow. In such instances, the WL process converges rapidly as nodes quickly incorporate all available predecessors' information. Our empirical analysis (in Appendix \ref{sec:ablation-study}) across two distinct tasks and three different ML models confirmed this: we found no statistically significant difference in performance between concatenated features and the single-histogram approach. Consequently, we prioritise the latter.
 
 \subsection{Enhancing Features' Expressiveness}
-The standard WL features are designed for graphs without any edge or node information. However, in our case, we have both node and edge-level information we can use to better represent the input graph. For this reason, inspired by previous works \cite{Togninalli2019-qa},\todo{inspired by Tognialli ...}  we include two extensions to the base algorithm:
+The standard WL features are designed for graphs without any edge or node information. However, in our case, we have both node and edge-level information we can use to better represent the input graph. For this reason, inspired by previous work of Tognialli \cite{Togninalli2019-qa},  we include two extensions to the base algorithm:
 \begin{itemize}
     \item \textbf{Node-information extension}: To add node information into the extraction process, we initialise the node colour with the hash of its type and subtype (e.g. a \texttt{Variable node} and a \texttt{Sum node} will be initialised with different colours). Formally, $c^{(0)}(v) \leftarrow \text{HASH}(\text{type}(v) \ || \ \text{subtype}(v))$ where $||$ denotes string concatenation.
     \item \textbf{Edge-information extension}: To add edge information into the extraction process, we concatenate the edge type to the node colour during the aggregation step (e.g. in the example of Figure \ref{fig:wl-feature-exec}, if Node B was connected to node A via a Leading edge, the aggregation of node B would be: (blue, blue-L)). Formally, assuming a directed graph where edges flow towards $v$, its multiset update becomes $M(v) \leftarrow \{\!\!\{c^{(t-1)}(w) \ || \ \text{type}(w, v) \mid (w,v) \in E\}\!\!\}$.
 \end{itemize}
-Finally, we can use the fact that our graphs are directed and only update a node colour based on its incoming neighbours.\todo{so what? How do we exploit this and for what?}
+Finally, since our graphs are directed, we can filter out outgoing edges and update the color of a node solely based on the incoming edges.
 
 Using these extensions, we can now define four types of features: (i) \texttt{WL}, standard WL features without node or edge information, (ii) \texttt{WLn}, WL features enhanced via node-information extensions, (iii) \texttt{WLe},  WL features enhanced via edge-information extensions, and (iv) \texttt{WLne}, WL features enhanced with both edge and node-information. 
 
-\subsection{The ``Cut'' Trick}\todo{I do not like the word trick. Leave only cut or find a better word.}
+\subsection{The ``Cut''}
 In the WL algorithm, the colour of a node is highly dependent on its degree, and two nodes with different degrees, even when sharing the same original colour and the same type of neighbour nodes, will end up with different colours. This can be problematic for nodes representing operators and constraints where the number of connected sub-elements can vary. As an example, let's examine the \texttt{all\_different} global constraint. Using the standard algorithm, \texttt{all\_different([v1, v2, v3])} will get a totally different and uncorrelated colour to \texttt{all\_different([v1, v2])} solely due to its degree. In practice, while preserving some differences between the two constraints, we would still capture the fact that they are similar.
 
 To achieve this, we can virtually ``cut'' the connections between the nodes representing constraints and operators with a variable number of operands in them. We will refer to these nodes as cut nodes. In practice, during the aggregation steps, the cut nodes will not be updated since their incoming connections will be ignored. However, the cut nodes will still contribute to the update of the nodes they are connected to via their outgoing edges. All cut nodes can be seen in Appendix \ref{sec:node-types}. 
@@ -39,40 +39,8 @@ The cut shifts the local equivalence criterion from a graded/counting bisimilari
 
 Since a cut removes any information regarding the degree of a node, to retain it we add extra features after the colour histogram. Specifically, from each cut node, we can generate node pairs comprising the cut node and its incoming neighbours. Thus, each cut of degree $n$ will generate $n$ pairs. After having generated all the pairs, we count the occurrence of each pair in a graph to generate a histogram of pairs and concatenate it to the histogram of colours.
 
-The cut can only be applied when node information is present, thus, only to \texttt{WLn} and \texttt{WLne} features. We will call the features where the cut is applied \texttt{WLc-n} if only the cut is applied to \texttt{WLn} features and \texttt{WLc-ne} if the cut is applied to \texttt{WLne}. A formalisation of the \texttt{WLc-n} features can be seen in Algorithm \ref{alg:wl-cut}, and a graphical depiction of how the cut is applied can be seen in Figure \ref{fig:cut-trick}.
+The cut can only be applied when node information is present, thus, only to \texttt{WLn} and \texttt{WLne} features. We will call the features where the cut is applied \texttt{WLc-n} if only the cut is applied to \texttt{WLn} features and \texttt{WLc-ne} if the cut is applied to \texttt{WLne}. A full formalisation and line-by-line description of the \texttt{WLc-n} feature extraction procedure is detailed in Algorithm \ref{alg:wl-cut} in Appendix \ref{sec:cut-algorithm}, while a graphical depiction of how the cut is applied can be seen in Figure \ref{fig:cut-trick}.
 
-\todo{adding an algo for without description is pointless. Consider moving it to the appendix and descripte what it does like "in line ..."}
-
-\begin{algorithm}[ht]
-\scriptsize
-\caption{\texttt{WLc-n} Algorithm for Feature Extraction. The \texttt{WLc-ne} version will be different only in the aggregation step, where the edge information will also be included.}
-\label{alg:wl-cut}
-\begin{algorithmic}[1]
-\Require Graph $G = (V, E)$, iterations $T$, subset $V_{cut} \subseteq V$ of cut nodes
-\Ensure Feature histograms of colours and pairs
-\State \textbf{Initialisation:} $c^{(0)}(v) \leftarrow \text{HASH}(\text{type}(v) \,||\, \text{subtype}(v))$ for all $v \in V$
-\State $t \leftarrow 0$
-\Repeat
-    \State $t \leftarrow t + 1$
-    \For{each node $v \in V$}
-        \If{$v \notin V_{cut}$}
-            \State $M(v) \leftarrow \{\!\!\{c^{(t-1)}(w) \mid (w,v) \in E\}\!\!\}$
-            \State $c^{(t)}(v) \leftarrow \text{HASH}(c^{(t-1)}(v), \text{sort}(M(v)))$
-        \EndIf
-    \EndFor
-\Until{$t = T$}
-\State $Pairs \leftarrow \{\!\!\{\}\!\!\}$ \Comment{Initialize multiset for pairs histogram}
-\For{each node $v \in V_{cut}$}
-    \State $S(v) \leftarrow \{ c^{(0)}(w) \mid (w,v) \in E \}$ \Comment{Set of initial colours (types) of incoming neighbours}
-    \State $c^{(final)}(v) \leftarrow \text{HASH}(c^{(T)}(v), \text{sort}(S(v)))$
-    \For{each node $w$ where $(w,v) \in E$}
-        \State $Pairs \leftarrow Pairs \cup \{\!\!\{ (c^{(0)}(w), c^{(0)}(v)) \}\!\!\}$
-    \EndFor
-\EndFor
-\State $c^{(final)}(v) \leftarrow c^{(T)}(v)$ for all $v \in V \setminus V_{cut}$
-\State \Return $\text{Histogram}(c^{(final)}) \cup \text{Histogram}(Pairs)$
-\end{algorithmic}
-\end{algorithm}
 
 \begin{figure}[t]
     \centering
@@ -81,20 +49,19 @@ The cut can only be applied when node information is present, thus, only to \tex
     \label{fig:cut-trick}
 \end{figure}
 
-\subsection{Feature Characteristics and Normalisation} \label{sec:feature_characteristics}
-\todo{this section looks strange. We have some discussion about the properties, an observation that lead to the additon of a feature and the normalization. Consider moving the discussion as a remark in the end of the section, add a subsection for the extra features and a subsection for the normalization}
-As a consequence of our design choices, especially of having directed graphs, the extracted features have emerging properties that are worth noting. In particular, since variable and parameter edges have no incoming node (but for the variable connected to the objective function), the colours of those values never get updated. Thus, one value in the final feature set would represent the number of variables in the graph, and another the number of parameters in the graph.
+\subsection{Auxiliary Structural Features}\label{sec:auxiliary_features}
+As a consequence of our design choices, especially having directed graphs, variable and parameter nodes have no incoming edges (with the sole exception of the objective variable connected to the Solution node). Because their colours never update during message passing, their entries in the final colour histogram naturally reflect the total counts of variables and parameters in the problem.
 
-To give some extra information about variables and parameters in the graph, besides their total count, we decided to add two extra features, one representing the average number of constraints/operators a variable takes part in and one representing the same but for parameters.
+To provide richer structural context beyond raw counts, we augment the histogram representation with two auxiliary features: (i) the average number of constraints and operators in which a variable participates (variable out-degree), and (ii) the average number of operations in which a parameter participates (parameter out-degree).
 
-Also, due to the direct nature of our graphs, most paths in the graph are quite shallow, especially after the cut. As an example, in the \texttt{x + 3 = y} constraint, we will have 2 variable nodes, (\texttt{x, y}), one parameter node (\texttt{3}), one operator node (\texttt{+}) and one constraint node (\texttt{=}). The operator node can be updated only once since the values of the parameter and variable nodes connected to it will never get updated. At the same time, the value of the constraint node can be updated at most twice: once at the first step when it aggregates with the original \texttt{+} and \texttt{y} colours and once at the second step when it aggregates with the updated \texttt{+} colour and the original, unmodified \texttt{y} colour. For a deeper discussion on the depth of the produced graphs, see Appendix \ref{sec:graph-depth}. 
+\subsection{Feature Normalisation and Vocabulary Alignment}\label{sec:normalisation}
+Once the raw feature histograms are extracted, two post-processing steps are applied to produce a standardized, model-ready feature representation:
 
-Global constraints are always terminal nodes without any outgoing nodes; thus, as a consequence, updating them only once, at the end of the standard WL steps, will result in the same output as updating them during the standard WL steps.
+\paragraph{Normalisation.} Raw histogram frequencies scale proportionally with problem instance size. Without normalisation, feature magnitudes reflect instance scale rather than topological structure, hindering cross-instance generalisation. To ensure comparability across diverse problems, we normalise the colour histogram by the total number of nodes $|V|$ and the pairs histogram by the total number of pairs $|Pairs|$. This bounds all histogram values within $[0, 1]$.
 
-Finally, once the final histograms are extracted from the graphs, we need to normalise the features. This is a necessary step since the values in the histograms will grow proportionally to the size of the graph. Thus, if not normalised, the produced histograms will be comparable only with those produced by graphs of the same size, making it impossible to generalise.
+\paragraph{Vocabulary Alignment.} Across distinct problem instances, the set of generated colours varies, with different graphs sharing only a subset of labels. To construct a consistent vector representation for machine learning models, we assemble a global colour vocabulary across all training graphs. Any colour missing from a particular instance is assigned a frequency of zero. During inference on unseen test instances, any novel colours not observed in the training vocabulary are discarded.
 
-We decided to normalise the colour histograms by dividing each value in the histogram by the total count of nodes. Similarly, the pairs histogram is normalised by the total pairs count. This normalisation step will generate a final feature set with values always smaller than or equal to 1.
+\subsection{Remarks on Graph Dynamics and Depth}\label{sec:feature_characteristics}
+Due to the directed nature of our converted graphs, paths from sources to sinks are inherently shallow, especially after applying the cut. For example, in a constraint such as $x + 3 = y$, the operator node ($+$) can update its colour at most once because its incoming variable and parameter predecessors ($x$ and $3$) never change colour. The equality constraint node ($=$) can update at most twice: first when aggregating the initial $+$ and $y$ colours, and second when incorporating the updated $+$ colour alongside the static $y$ colour. 
 
-During the extraction process, different graphs will generate different colours, and only a subset of those will be shared between different graphs. This will result in feature sets with different histogram sizes and with different colours in them. To train an ML model, we need to standardise the histograms, making them share the same colours. To do so, we can collect all colours from all histograms and add a 0 coefficient to all colours missing in a histogram. 
-
-During testing, if we encounter a new colour not present in the training data, we simply discard it and ignore the update.
+Consequently, the diameter of the graph remains bounded (typically between 1 and 4, reduced to 2 under the cut; see Appendix \ref{sec:graph-depth} for a comprehensive discussion). Furthermore, global constraints act as terminal sink nodes without outgoing edges. As a result, updating them once at the end of the standard WL steps produces the exact same structural signature as updating them during each intermediate step, while avoiding unnecessary multiset over-refinement.

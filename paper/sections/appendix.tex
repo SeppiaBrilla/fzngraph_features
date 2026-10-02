@@ -1,9 +1,9 @@
 \appendix
 \section{Node Types for FlatZinc}\label{sec:node-types}
 Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models to graphs. While these nodes have been especially designed around the FlatZinc interface, we believe that they could easily generalise to different languages, with the only exception of global nodes, which are tied to the one supported by the solver used for the MiniZinc to FlatZinc conversion (Gecode in our case).
-\begin{table}
+\begin{table*}
   \centering
-  \resizebox{\columnwidth}{!}{
+  \resizebox{\textwidth}{!}{
     \begin{tabular}{|c|c|c|c|c|c|}
       \cline{0-5}
  Name & Type & Subtype & Is Cut & Is Global & Description \\
@@ -86,8 +86,49 @@ Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models
  }
   \caption{Node types used in our graphs converted from FlatZinc.}
   \label{tab:nodes}
-\end{table}
-\todo{not readable. Made it that spans the entire page}
+\end{table*}
+
+\section{The Cut Algorithm}\label{sec:cut-algorithm}
+Algorithm \ref{alg:wl-cut} outlines the feature extraction procedure for \texttt{WLc-n}. The edge-enhanced variant \texttt{WLc-ne} operates identically, except that edge types are included alongside neighbour colours during aggregation (Line \ref{algline:agg}).
+
+\begin{algorithm}[t]
+\small
+\caption{\texttt{WLc-n} Algorithm for Feature Extraction.}
+\label{alg:wl-cut}
+\begin{algorithmic}[1]
+\Require Directed graph $G = (V, E)$, iterations $T$, cut nodes $V_{cut} \subseteq V$.
+\Ensure Feature histograms of colours and pairs.
+\State \textbf{Initialisation:} $c^{(0)}(v) \leftarrow \text{HASH}(\text{type}(v) \,||\, \text{subtype}(v))$ for all $v \in V$ \label{algline:init}
+\State $t \leftarrow 0$
+\Repeat
+    \State $t \leftarrow t + 1$
+    \For{each node $v \in V$}
+        \If{$v \notin V_{cut}$} \label{algline:ifcut}
+            \State $M(v) \leftarrow \{\!\!\{c^{(t-1)}(w) \mid (w,v) \in E\}\!\!\}$ \label{algline:agg}
+            \State $c^{(t)}(v) \leftarrow \text{HASH}(c^{(t-1)}(v), \text{sort}(M(v)))$ \label{algline:hash}
+        \EndIf
+    \EndFor
+\Until{$t = T$}
+\State $Pairs \leftarrow \{\!\!\{\}\!\!\}$ \Comment{Multiset for pair occurrences} \label{algline:pairsinit}
+\For{each node $v \in V_{cut}$} \label{algline:forcut}
+    \State $S(v) \leftarrow \{ c^{(0)}(w) \mid (w,v) \in E \}$ \Comment{Set of initial incoming neighbour types} \label{algline:set}
+    \State $c^{(final)}(v) \leftarrow \text{HASH}(c^{(T)}(v), \text{sort}(S(v)))$ \label{algline:cfinalcut}
+    \For{each node $w$ where $(w,v) \in E$} \label{algline:forinw}
+        \State $Pairs \leftarrow Pairs \cup \{\!\!\{ (c^{(0)}(w), c^{(0)}(v)) \}\!\!\}$ \label{algline:pairsadd}
+    \EndFor
+\EndFor
+\State $c^{(final)}(v) \leftarrow c^{(T)}(v)$ for all $v \in V \setminus V_{cut}$ \label{algline:cfinalnoncut}
+\State \Return $\text{Histogram}(c^{(final)}) \cup \text{Histogram}(Pairs)$ \label{algline:return}
+\end{algorithmic}
+\end{algorithm}
+
+The execution of Algorithm \ref{alg:wl-cut} operates as follows:
+\begin{itemize}
+    \item \textbf{Line \ref{algline:init} (Initialisation):} Each node $v \in V$ receives an initial colour $c^{(0)}(v)$ based on its type and subtype (e.g., variable, parameter, or operator/constraint type).
+    \item \textbf{Lines 3--11 (Iterative Refinement):} Standard Weisfeiler-Leman refinement runs for $T$ steps over non-cut nodes ($v \notin V_{cut}$), updating their colour by hashing the sorted multiset $M(v)$ of incoming neighbour colours (Lines \ref{algline:agg}--\ref{algline:hash}). Cut nodes skip this aggregation (Line \ref{algline:ifcut}), preventing degree-dependent updates, but continue to propagate their colours downstream.
+    \item \textbf{Lines \ref{algline:forcut}--\ref{algline:pairsadd} (Cut Node Aggregation \& Pair Counting):} After refinement, cut nodes aggregate the \emph{set} (rather than multiset) $S(v)$ of their incoming neighbour types (Line \ref{algline:set}), updating their final colour in Line \ref{algline:cfinalcut}. This ensures constraints of the same type receive the same colour regardless of arity. Lines \ref{algline:forinw}--\ref{algline:pairsadd} recover the discarded degree information by collecting directed $(neighbour, cut)$ pairs into $Pairs$.
+    \item \textbf{Lines \ref{algline:cfinalnoncut}--\ref{algline:return} (Feature Extraction):} Non-cut nodes retain their refined colours $c^{(T)}(v)$, and the final feature vector is formed by concatenating the histograms of node colours and neighbour pairs.
+\end{itemize}
 
 \section{On The Shallowness of the Graphs}\label{sec:graph-depth}
 Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints are present, and they usually differ from the type of constraint that replaces the equality (e.g. inequality, less than or equal to, etc.) The graph at this level has a diameter of 4, which is reduced to 2 when the cut is applied. Most supported constraints are, instead, quite simple, with most of them having a diameter of one or two. For the full list of supported constraints, we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
