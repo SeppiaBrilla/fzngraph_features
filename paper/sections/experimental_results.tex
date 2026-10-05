@@ -1,27 +1,27 @@
 \section{Experimental Results}
 
-To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modelling ecosystem. We used the 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct two algorithm selection tasks: (i) maximising the Borda count score across three solvers, (ii) maximising prediction accuracy for the same solver set. Solvers were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minutes timeout.
+To evaluate the proposed methodology, we implemented the graph conversion algorithm within the FlatZinc modelling ecosystem. We used the 300 instances from the 2023, 2024, and 2025 MiniZinc Challenges to construct two algorithm selection tasks: (i) maximising the Borda count score across three solvers, (ii) maximising prediction accuracy for the same solver set. Solvers were executed with the \texttt{--free-search} flag enabled\footnote{\url{https://docs.minizinc.dev/en/stable/command\_line.html\#cmdoption-f}} on an Intel Xeon Gold 6130 processor with a 20-minute timeout.
 
 Our approach is compared against two baselines: a standard performance baseline (single best solver (SBS) or majority classifier) and \texttt{fzn2feat}.
 
-Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. The number of aggregation steps is appended to the features using a dash (\texttt{-}) sign (example: \texttt{Wlc-n} features with one aggregation will be \texttt{WLc-n-1}).
+Given the limited depth of our graph representations (see Section~\ref{sec:feature_characteristics}), we evaluate \texttt{WL} features using one and two aggregation steps. The number of aggregation steps is appended to the features using a dash (\texttt{-}) sign (example: \texttt{WLc-n} features with one aggregation will be \texttt{WLc-n-1}).
 
-For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and three-layer Multi-Layer Perceptrons (MLP), which is the simplest MLP architecture capable of approximating any continuous function while minimising the risk of overfitting and vanishing gradients. The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimisation, ensemble-based logical partitioning, and connectionist functional approximation. All tasks have been evaluated using repeated five-fold nested cross-validation on 10 random seeds for a total of 50 repetitions per task per ML model. The training pipeline followed a four-step protocol:
+For each task, we trained three models: Support Vector Machines (SVM), Random Forests (RF), and Multi-Layer Perceptrons (MLP) with three hidden layers. The selection of SVM, RF, and MLP provides an evaluation framework that tests feature sets against three distinct mathematical paradigms: geometric margin optimisation, ensemble-based logical partitioning, and connectionist functional approximation. All tasks have been evaluated using repeated five-fold nested cross-validation on 10 random seeds for a total of 50 outer-fold evaluations per task per ML model. The training pipeline followed a four-step protocol:
 \begin{enumerate}
   \item \textbf{Hyperparameter Optimisation :} We performed a grid search over predefined configurations, evaluating each via mean 5-fold internal cross-validation.
   \item \textbf{Model Selection:} We selected the highest-scoring configuration. Ties were broken by prioritising simpler models to mitigate overfitting:
     \begin{itemize}
-      \item For SVM: lower regularization ($C$) and $\gamma$ values, favoring the RBF kernel.
+      \item For SVM: lower $C$ (stronger regularisation) and $\gamma$ values, favoring the RBF kernel.
       \item For RF: fewer trees and shallower maximum depth.
       \item For MLP: fewer training steps and a smaller $\alpha$ penalty.
     \end{itemize}
-  \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range $20$ and $\min(\text{n\_features}, \text{n\_samples})$ with a step size of 20.
+  \item \textbf{Dimensionality Reduction:} We evaluated the best configuration on reduced feature sets using Principal Component Analysis (PCA) in the range from $20$ to $\min(\text{n\_features}, \text{n\_samples})$ with a step size of 20.
       \item \textbf{Final Feature Selection:} The feature set (original or PCA-transformed) yielding the highest cross-validation score was selected for final evaluation.
     \end{enumerate}
 
     The last two steps (Dimensionality Reduction and Final Feature Selection) have been skipped for MLP classifiers due to their ability to handle high-dimensional data.
 
-    All figures group together features extracted with the same methodology but with different aggregation steps, using an alternated shaded background to improve readability.
+    All figures group together features extracted with the same methodology but with different aggregation steps, using an alternating shaded background to improve readability.
 
     \begin{figure}[t]
       \centering
@@ -66,7 +66,7 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
 
     Notably, features derived from the cut-based representation (\texttt{WLc-n} and \texttt{WLc-ne}) significantly outperformed all other variants. The number of aggregation steps had a negligible impact on final performance across all feature sets.
 
-    MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features. On the other hand, RF ones show an increase when adding the node information, but not a significant jump between \texttt{WLn}/\texttt{Wlne} features and the cut ones and all classifiers have similar performance. For readability purposes and since cut features are either on par or better than their non-cut counterpart, we will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models. We will provide their comprehensive comparison in Appendix \ref{sec:borda-scores}.
+    MLP classifiers exhibit performance trends similar to those of the SVM on \texttt{WL}-based features. On the other hand, RF ones show an increase when adding the node information, but not a significant jump between \texttt{WLn}/\texttt{WLne} features and the cut ones and these feature sets have similar performance. For readability purposes and since cut features are either on par or better than their non-cut counterpart, we will now focus only on the performance of cut-based features relative to the \texttt{fzn2feat} baseline for these models. We will provide their comprehensive comparison in Appendix \ref{sec:borda-scores}.
 
     \begin{figure}[t]
       \centering
@@ -119,7 +119,7 @@ For each task, we trained three models: Support Vector Machines (SVM), Random Fo
     When compared against the \texttt{fzn2feat} baseline (Figure \ref{fig:svc-accuracy}), cut-based features exhibit significantly higher accuracy. 
     % This performance gain is confirmed by both McNemar and Wilcoxon signed-rank tests, with $p$-values below $0.01$. Conversely, inter-model comparisons between the various cut-based feature sets do not yield statistically significant differences.
 
-    Similarly, the results in Section \ref{sec:borda-cout} show that comparisons between cut and non-cut features, paired with RF
+    As in Section \ref{sec:borda-cout}, RF models show similar performance with cut and non-cut features that include node information.
     %, yield no significant results, as determined by both Wilcoxon and McNemar tests. 
     However, MLP-based models demonstrate a significant improvement when paired with cut features. 
     We show a comprehensive comparison in Appendix \ref{sec:as-acc}, while here we show only cut-based features comparisons with \texttt{fzn2feat} when paired with RF and MLP models.

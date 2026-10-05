@@ -1,11 +1,11 @@
 \section{Graph Conversion}\label{sec:conversion}
 
-In this section we describe the graph conversion we propose in this work. Since the graph conversion is decupled from the features extraction methodology, we will separate the two sections and defer the feature extraction methodology discussion to Section \ref{sec:feature_Extraction}. As stated in Section \ref{sec:graph-representation}, many different approaches for graph conversions have been proposed. Our approach is inspired by that of \citet{boisvert2024towards}. We have decided to use Boisvert et al.'s syntax tree-like representation as it allows us to decompose complex constraints into simpler elements that could be reused in different constraints with similar meanings. 
+In this section we describe the graph conversion we propose in this work. Since the graph conversion is decoupled from the feature extraction methodology, we will separate the two sections and defer the feature extraction methodology discussion to Section \ref{sec:feature_Extraction}. As stated in Section \ref{sec:graph-representation}, many different approaches for graph conversions have been proposed. Our approach is inspired by that of \citet{boisvert2024towards}. We have decided to use Boisvert et al.'s syntax tree-like representation as it allows us to decompose complex constraints into simpler elements that could be reused in different constraints with similar meanings.
 
 Unlike Boisvert et al., we do not include domain values in our representation. We decided to exclude domain values for practical reasons. They argue that a good conversion should be injective (e.g. two distinct instances should never be mapped to the same graph). We do recognise the soundness of this argument, however, our primary objective is to use the features for algorithm selection and, as an example, an instance from the 2025 Minizinc challenge\footnote{\url{https://www.minizinc.org/challenge/2025/results/}} (coming from the cgt problem with instance name cgt\_12\_h27\_r0.05\_s0.5\_3) had an objective function with a domain between -1.932.060 and 1.714.644, resulting in 3.646.705 total possible values just for one domain.
-The full instance would also require adding also other variables and their domains as well as constraints and operators. A graph with this many nodes would be intractable for our purposes. Furthermore, even assuming the tractability of its conversion, the high number of value nodes would add a lot of noise that could weaken the signal from the remaining of nodes. Finally, our graphs are directed instead of undirected. This choice allow us to have shallow graphs with small diameters making it possible to convey all the information with a limited amount of aggregation steps. 
+The full instance would also require adding other variables and their domains as well as constraints and operators. A graph with this many nodes would be intractable for our purposes. Furthermore, even assuming the tractability of its conversion, the high number of value nodes would add a lot of noise that could weaken the signal from the remaining nodes. Finally, our graphs are directed instead of undirected. This choice gives shallow local constraint decompositions, making it possible to propagate information along their directed paths with a limited number of aggregation steps.
 
-In more details, we define five types of nodes:
+In more detail, we define five types of nodes:
 \begin{itemize}
     \item \textbf{Variable nodes}: representing the variables of the problem. 
     \item \textbf{Solution node}: a single node for each problem that represents the type of problem (Minimisation, Maximisation or Satisfaction).
@@ -21,7 +21,7 @@ Edges are typed as well; in particular, there are three types of edges:
 \begin{itemize}
     \item \textbf{Lead edges}: used to connect variables, parameters and operators to operators and constraints for which the order of the operands does not matter (e.g. sum or equality). Lead Edges are also used for variables, parameters and operators that fall on the left side of an operation or constraint where the order of the operands matters (e.g. subtraction or strictly less than). Lead edges are also used to connect the solution node to the objective variable in optimisation problems.
     \item \textbf{Trailing edges}: Used to connect variables, parameters and operators to operators and constraints for which the order of the operands matters and the operands fall on the right side of the operation.
-    \item \textbf{Global edges}: Used to connect variables and parameters to global constraints. This helps to distinguish normal connections from normal and global constraints.
+    \item \textbf{Global edges}: Used to connect variables and parameters to global constraints. This helps to distinguish connections to ordinary constraints from connections to global constraints.
 \end{itemize}
 
 \begin{figure}[t]
@@ -32,7 +32,8 @@ var int x;
 var int y;
 constraint 3*x <= y;
 constraint y < 10;
-all_different([x, y]);
+constraint
+  all_different([x, y]);
 solve maximise x;\end{lstlisting}
     \end{subfigure}%
     \begin{subfigure}[c]{.45\columnwidth}

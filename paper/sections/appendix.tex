@@ -1,20 +1,20 @@
 \appendix
 \section{Node Types for FlatZinc}\label{sec:node-types}
-Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models to graphs. While these nodes have been especially designed around the FlatZinc interface, we believe that they could easily generalise to different languages, with the only exception of global nodes, which are tied to the one supported by the solver used for the MiniZinc to FlatZinc conversion (Gecode in our case).
+Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models to graphs. While these nodes have been especially designed around the FlatZinc interface, we believe that they could easily generalise to different languages, with the only exception of global nodes, which are tied to those supported by the solver used for the MiniZinc to FlatZinc conversion (Gecode in our case).
 \begin{table*}
   \centering
   \resizebox{\textwidth}{!}{
     \begin{tabular}{|c|c|c|c|c|c|}
-      \cline{0-5}
+      \cline{1-6}
  Name & Type & Subtype & Is Cut & Is Global & Description \\
-      \cline{0-5}
+      \cline{1-6}
  Variable & variable & -- & No & No & Problem variable \\
  Parameter & parameter & -- & No & No & Literal value or parameter \\
  Multiply & operator & mul\_node & No & No & Multiplication operator \\
  Linear Sum & operator & lin\_sum\_node & Yes & No & Weighted sum of variables \\
  Sum & operator & sum\_node & No & No & Sum operator \\
  Equality & constraint & equality\_node & No & No & Equality constraint \\
- Inequality & constraint & inequality\_node & No & No & Equality constraint \\
+ Inequality & constraint & inequality\_node & No & No & Inequality constraint \\
  Less than & constraint & le\_node & No & No & Strictly less than constraint \\
  Less or Equal & constraint & leq\_node & No & No & Less than or equal constraint \\
  Imply & constraint & imply\_node & No & No & Logical implication \\
@@ -81,7 +81,7 @@ Table \ref{tab:nodes} shows all the node types used to decompose FlatZinc models
  At most & constraint & at\_most\_node & Yes & Yes & Global at most constraint \\
  Integer pow & constraint & int\_pow\_node & Yes & Yes & Global integer power constraint \\
  Global cardinality closed & constraint & global\_cardinality\_closed\_node & Yes & Yes & Global cardinality constraint closed \\
-      \cline{0-5}
+      \cline{1-6}
     \end{tabular}
  }
   \caption{Node types used in our graphs converted from FlatZinc.}
@@ -96,7 +96,7 @@ Algorithm \ref{alg:wl-cut} outlines the feature extraction procedure for \texttt
 \caption{\texttt{WLc-n} Algorithm for Feature Extraction.}
 \label{alg:wl-cut}
 \begin{algorithmic}[1]
-\Require Directed graph $G = (V, E)$, iterations $T$, cut nodes $V_{cut} \subseteq V$.
+\Require Directed graph $G = (V, E)$, iterations $T \geq 1$, cut nodes $V_{cut} \subseteq V$.
 \Ensure Feature histograms of colours and pairs.
 \State \textbf{Initialisation:} $c^{(0)}(v) \leftarrow \text{HASH}(\text{type}(v) \,||\, \text{subtype}(v))$ for all $v \in V$ \label{algline:init}
 \State $t \leftarrow 0$
@@ -106,6 +106,8 @@ Algorithm \ref{alg:wl-cut} outlines the feature extraction procedure for \texttt
         \If{$v \notin V_{cut}$} \label{algline:ifcut}
             \State $M(v) \leftarrow \{\!\!\{c^{(t-1)}(w) \mid (w,v) \in E\}\!\!\}$ \label{algline:agg}
             \State $c^{(t)}(v) \leftarrow \text{HASH}(c^{(t-1)}(v), \text{sort}(M(v)))$ \label{algline:hash}
+        \Else
+            \State $c^{(t)}(v) \leftarrow c^{(t-1)}(v)$
         \EndIf
     \EndFor
 \Until{$t = T$}
@@ -118,20 +120,20 @@ Algorithm \ref{alg:wl-cut} outlines the feature extraction procedure for \texttt
     \EndFor
 \EndFor
 \State $c^{(final)}(v) \leftarrow c^{(T)}(v)$ for all $v \in V \setminus V_{cut}$ \label{algline:cfinalnoncut}
-\State \Return $\text{Histogram}(c^{(final)}) \cup \text{Histogram}(Pairs)$ \label{algline:return}
+\State \Return $\text{Histogram}(c^{(final)}) \mathbin{||} \text{Histogram}(Pairs)$ \label{algline:return}
 \end{algorithmic}
 \end{algorithm}
 
 The execution of Algorithm \ref{alg:wl-cut} operates as follows:
 \begin{itemize}
     \item \textbf{Line \ref{algline:init} (Initialisation):} Each node $v \in V$ receives an initial colour $c^{(0)}(v)$ based on its type and subtype (e.g., variable, parameter, or operator/constraint type).
-    \item \textbf{Lines 3--11 (Iterative Refinement):} Standard Weisfeiler-Leman refinement runs for $T$ steps over non-cut nodes ($v \notin V_{cut}$), updating their colour by hashing the sorted multiset $M(v)$ of incoming neighbour colours (Lines \ref{algline:agg}--\ref{algline:hash}). Cut nodes skip this aggregation (Line \ref{algline:ifcut}), preventing degree-dependent updates, but continue to propagate their colours downstream.
-    \item \textbf{Lines \ref{algline:forcut}--\ref{algline:pairsadd} (Cut Node Aggregation \& Pair Counting):} After refinement, cut nodes aggregate the \emph{set} (rather than multiset) $S(v)$ of their incoming neighbour types (Line \ref{algline:set}), updating their final colour in Line \ref{algline:cfinalcut}. This ensures constraints of the same type receive the same colour regardless of arity. Lines \ref{algline:forinw}--\ref{algline:pairsadd} recover the discarded degree information by collecting directed $(neighbour, cut)$ pairs into $Pairs$.
+    \item \textbf{Lines 3--14 (Iterative Refinement):} Standard Weisfeiler-Leman refinement runs for $T$ steps over non-cut nodes ($v \notin V_{cut}$), updating their colour by hashing the sorted multiset $M(v)$ of incoming neighbour colours (Lines \ref{algline:agg}--\ref{algline:hash}). Cut nodes skip this aggregation (Line \ref{algline:ifcut}), preventing degree-dependent updates, but continue to propagate their colours downstream.
+    \item \textbf{Lines \ref{algline:forcut}--\ref{algline:pairsadd} (Cut Node Aggregation \& Pair Counting):} After refinement, cut nodes aggregate the \emph{set} (rather than multiset) $S(v)$ of their incoming neighbour types (Line \ref{algline:set}), updating their final colour in Line \ref{algline:cfinalcut}. This ensures cut nodes of the same type with the same set of incoming node types receive the same colour regardless of arity. Lines \ref{algline:forinw}--\ref{algline:pairsadd} recover the discarded degree information by collecting directed $(neighbour, cut)$ pairs into $Pairs$.
     \item \textbf{Lines \ref{algline:cfinalnoncut}--\ref{algline:return} (Feature Extraction):} Non-cut nodes retain their refined colours $c^{(T)}(v)$, and the final feature vector is formed by concatenating the histograms of node colours and neighbour pairs.
 \end{itemize}
 
 \section{On The Shallowness of the Graphs}\label{sec:graph-depth}
-Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints are present, and they usually differ from the type of constraint that replaces the equality (e.g. inequality, less than or equal to, etc.) The graph at this level has a diameter of 4, which is reduced to 2 when the cut is applied. Most supported constraints are, instead, quite simple, with most of them having a diameter of one or two. For the full list of supported constraints, we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
+Figure \ref{fig:long-graph} shows the constraint that produces the deepest path currently implemented. A family of similar constraints is present, and they usually differ in the type of constraint that replaces the equality (e.g. inequality, less than or equal to, etc.) This local decomposition has a longest directed path of 4 edges, with effective propagation depth reduced to 2 when the cut is applied. Most supported constraints are, instead, quite simple, with most of them having directed paths of at most one or two edges. For the full list of supported constraints, we refer to the FlatZinc specification.\footnote{\url{https://docs.minizinc.dev/en/stable/lib-flatzinc.html}}
 
 \begin{figure}[t]
   \centering
@@ -157,8 +159,8 @@ Figures \ref{fig:RF-bordacount-all} and \ref{fig:nn-bordacount-all} show the res
   \label{fig:nn-bordacount-all}
 \end{figure}
 
-\section{All Algorithm Section Accuracy Results}\label{sec:as-acc}
-Figures \ref{fig:RF-acc-all} and \ref{fig:nn-acc-all} show the results on the Algorithm selection accuracy tasks for (respectively) RF and MLP classifiers trained with all Feature sets. Similarly to the Borda count counterpart, RF results show similar results for all \texttt{WL} based features that include node information as well as \texttt{fzn2feat} features, while, MLP results show a trend similar to SVM where cut features significantly outperform the other \texttt{WL}-based features as well as showing an higher gap with respect to \texttt{fzn2feat} (although less pronounced respect to the Borda Count).
+\section{All Algorithm Selection Accuracy Results}\label{sec:as-acc}
+Figures \ref{fig:RF-acc-all} and \ref{fig:nn-acc-all} show the results on the Algorithm selection accuracy tasks for (respectively) RF and MLP classifiers trained with all Feature sets. Similarly to the Borda count counterpart, RF results show similar results for all \texttt{WL} based features that include node information as well as \texttt{fzn2feat} features, while MLP results show a trend similar to SVM where cut features significantly outperform the other \texttt{WL}-based features as well as showing a higher gap with respect to \texttt{fzn2feat} (although less pronounced than in the Borda count task).
 
 \begin{figure}
   \centering
@@ -175,7 +177,7 @@ Figures \ref{fig:RF-acc-all} and \ref{fig:nn-acc-all} show the results on the Al
 \end{figure}
 
 \section{Ablation Study on the Importance of Concatenating All Aggregation Levels}\label{sec:ablation-study}
-To assess whether only using the last aggregation level of the \texttt{WL} resulted in a loss of performance, we conducted an ablation study on the best-performing features: \texttt{WLc-1/2}, \texttt{WLce-1/2}, \texttt{WLn-1/2}, and \texttt{WLne-1/2} across all different tasks and ML models. Results can be found in Tables \ref{tab:all-levels-borda} (Borda score), \ref{tab:all-levels-accuracy} (algorithm selection accuracy), and \ref{tab:all-levels-par} (parallel prediction). The tables show the mean and median results of the ML models trained on only the last level or on all levels of aggregation, as well as the p-value computed with the Wilcoxon test. In all cases but one, the results are not statistically significant. The only case in which they are (\texttt{WLc-1} in SVM algorithm selection accuracy prediction), it is in favour of the features with only the last aggregation level.
+To assess whether only using the last aggregation level of the \texttt{WL} resulted in a loss of performance, we conducted an ablation study on the best-performing features: \texttt{WLc-n-1/2}, \texttt{WLc-ne-1/2}, \texttt{WLn-1/2}, and \texttt{WLne-1/2} across all different tasks and ML models. Results can be found in Tables \ref{tab:all-levels-borda} (Borda score), \ref{tab:all-levels-accuracy} (algorithm selection accuracy), and \ref{tab:all-levels-par} (parallel prediction). The tables show the mean and median results of the ML models trained on only the last level or on all levels of aggregation, as well as the p-value computed with the Wilcoxon test. In all cases but one, the results are not statistically significant. The only case in which they are (\texttt{WLc-n-1} in SVM algorithm selection accuracy prediction), it is in favour of the features with only the last aggregation level.
 
 \begin{table}[t]
   \centering
@@ -191,10 +193,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \texttt{WLn-2} & 0.283 & 0.243 & 0.276 & 0.266 & 0.357 \\
         \texttt{WLne-1} & 0.226 & 0.212 & 0.258 & 0.245 & 0.561 \\
         \texttt{WLne-2} & 0.276 & 0.236 & 0.275 & 0.266 & 0.201 \\
-        \texttt{WLc-1} & 0.485 & 0.441 & 0.506 & 0.473 & 0.399 \\
-        \texttt{WLc-2} & 0.472 & 0.432 & 0.504 & 0.456 & 0.198 \\
-        \texttt{WLce-1} & 0.470 & 0.440 & 0.513 & 0.487 & 0.681 \\
-        \texttt{WLce-2} & 0.479 & 0.432 & 0.475 & 0.460 & 0.318 \\
+        \texttt{WLc-n-1} & 0.485 & 0.441 & 0.506 & 0.473 & 0.399 \\
+        \texttt{WLc-n-2} & 0.472 & 0.432 & 0.504 & 0.456 & 0.198 \\
+        \texttt{WLc-ne-1} & 0.470 & 0.440 & 0.513 & 0.487 & 0.681 \\
+        \texttt{WLc-ne-2} & 0.479 & 0.432 & 0.475 & 0.460 & 0.318 \\
         \bottomrule
       \end{tabular}
  }
@@ -214,10 +216,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \texttt{WLn-2} & 0.449 & 0.464 & 0.454 & 0.465 & 0.745 \\
         \texttt{WLne-1} & 0.440 & 0.452 & 0.447 & 0.455 & 0.509 \\
         \texttt{WLne-2} & 0.433 & 0.475 & 0.412 & 0.488 & 0.114 \\
-        \texttt{WLc-1} & 0.443 & 0.460 & 0.444 & 0.465 & 0.608 \\
-        \texttt{WLc-2} & 0.450 & 0.449 & 0.444 & 0.459 & 0.863 \\
-        \texttt{WLce-1} & 0.450 & 0.456 & 0.469 & 0.484 & 0.774 \\
-        \texttt{WLce-2} & 0.462 & 0.450 & 0.468 & 0.445 & 0.472 \\
+        \texttt{WLc-n-1} & 0.443 & 0.460 & 0.444 & 0.465 & 0.608 \\
+        \texttt{WLc-n-2} & 0.450 & 0.449 & 0.444 & 0.459 & 0.863 \\
+        \texttt{WLc-ne-1} & 0.450 & 0.456 & 0.469 & 0.484 & 0.774 \\
+        \texttt{WLc-ne-2} & 0.462 & 0.450 & 0.468 & 0.445 & 0.472 \\
         \bottomrule
       \end{tabular}
  }
@@ -230,14 +232,14 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \toprule
         & Last mean & All-levels mean & Last median & All-levels median & p value \\
         \midrule
-        \texttt{wln-1} & 0.192 & 0.212 & 0.218 & 0.229 & 0.969 \\
-        \texttt{wln-2} & 0.204 & 0.201 & 0.252 & 0.229 & 0.826 \\
-        \texttt{wlne-1} & 0.183 & 0.182 & 0.225 & 0.217 & 0.811 \\
-        \texttt{wlne-2} & 0.236 & 0.187 & 0.289 & 0.237 & 0.237 \\
-        \texttt{wlc-1} & 0.394 & 0.397 & 0.412 & 0.420 & 0.910 \\
-        \texttt{wlc-2} & 0.375 & 0.374 & 0.381 & 0.386 & 0.695 \\
-        \texttt{wlce-1} & 0.381 & 0.402 & 0.378 & 0.426 & 0.534 \\
-        \texttt{wlce-2} & 0.394 & 0.391 & 0.417 & 0.418 & 0.826 \\
+        \texttt{WLn-1} & 0.192 & 0.212 & 0.218 & 0.229 & 0.969 \\
+        \texttt{WLn-2} & 0.204 & 0.201 & 0.252 & 0.229 & 0.826 \\
+        \texttt{WLne-1} & 0.183 & 0.182 & 0.225 & 0.217 & 0.811 \\
+        \texttt{WLne-2} & 0.236 & 0.187 & 0.289 & 0.237 & 0.237 \\
+        \texttt{WLc-n-1} & 0.394 & 0.397 & 0.412 & 0.420 & 0.910 \\
+        \texttt{WLc-n-2} & 0.375 & 0.374 & 0.381 & 0.386 & 0.695 \\
+        \texttt{WLc-ne-1} & 0.381 & 0.402 & 0.378 & 0.426 & 0.534 \\
+        \texttt{WLc-ne-2} & 0.394 & 0.391 & 0.417 & 0.418 & 0.826 \\
         \bottomrule
       \end{tabular}
  }
@@ -260,10 +262,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \texttt{WLn-2} & 0.607 & 0.591 & 0.603 & 0.603 & 0.217 \\
         \texttt{WLne-1} & 0.589 & 0.597 & 0.600 & 0.596 & 0.336 \\
         \texttt{WLne-2} & 0.605 & 0.604 & 0.603 & 0.603 & 0.974 \\
-        \texttt{WLc-1} & 0.695 & 0.663 & 0.681 & 0.655 & 0.030 \\
-        \texttt{WLc-2} & 0.687 & 0.664 & 0.690 & 0.672 & 0.089 \\
-        \texttt{WLce-1} & 0.693 & 0.674 & 0.690 & 0.664 & 0.251 \\
-        \texttt{WLce-2} & 0.690 & 0.659 & 0.690 & 0.661 & 0.060 \\
+        \texttt{WLc-n-1} & 0.695 & 0.663 & 0.681 & 0.655 & 0.030 \\
+        \texttt{WLc-n-2} & 0.687 & 0.664 & 0.690 & 0.672 & 0.089 \\
+        \texttt{WLc-ne-1} & 0.693 & 0.674 & 0.690 & 0.664 & 0.251 \\
+        \texttt{WLc-ne-2} & 0.690 & 0.659 & 0.690 & 0.661 & 0.060 \\
         \bottomrule
       \end{tabular}
  }
@@ -283,10 +285,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \texttt{WLn-2} & 0.671 & 0.677 & 0.672 & 0.672 & 0.611 \\
         \texttt{WLne-1} & 0.668 & 0.674 & 0.672 & 0.672 & 0.804 \\
         \texttt{WLne-2} & 0.675 & 0.672 & 0.672 & 0.672 & 0.866 \\
-        \texttt{WLc-1} & 0.666 & 0.669 & 0.652 & 0.655 & 0.615 \\
-        \texttt{WLc-2} & 0.666 & 0.661 & 0.655 & 0.655 & 0.619 \\
-        \texttt{WLce-1} & 0.661 & 0.665 & 0.655 & 0.661 & 0.930 \\
-        \texttt{WLce-2} & 0.668 & 0.659 & 0.672 & 0.655 & 0.322 \\
+        \texttt{WLc-n-1} & 0.666 & 0.669 & 0.652 & 0.655 & 0.615 \\
+        \texttt{WLc-n-2} & 0.666 & 0.661 & 0.655 & 0.655 & 0.619 \\
+        \texttt{WLc-ne-1} & 0.661 & 0.665 & 0.655 & 0.661 & 0.930 \\
+        \texttt{WLc-ne-2} & 0.668 & 0.659 & 0.672 & 0.655 & 0.322 \\
         \bottomrule
       \end{tabular}
  }
@@ -299,14 +301,14 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \toprule
         & Last mean & All-levels mean & Last median & All-levels median & p value \\
         \midrule
-        \texttt{wln-1} & 0.581 & 0.577 & 0.586 & 0.586 & 0.841 \\
-        \texttt{wln-2} & 0.596 & 0.594 & 0.586 & 0.603 & 0.714 \\
-        \texttt{wlne-1} & 0.574 & 0.581 & 0.574 & 0.583 & 0.365 \\
-        \texttt{wlne-2} & 0.594 & 0.586 & 0.591 & 0.603 & 0.532 \\
-        \texttt{wlc-1} & 0.631 & 0.633 & 0.638 & 0.621 & 0.828 \\
-        \texttt{wlc-2} & 0.616 & 0.616 & 0.621 & 0.621 & 0.941 \\
-        \texttt{wlce-1} & 0.630 & 0.630 & 0.632 & 0.626 & 0.935 \\
-        \texttt{wlce-2} & 0.627 & 0.616 & 0.621 & 0.621 & 0.571 \\
+        \texttt{WLn-1} & 0.581 & 0.577 & 0.586 & 0.586 & 0.841 \\
+        \texttt{WLn-2} & 0.596 & 0.594 & 0.586 & 0.603 & 0.714 \\
+        \texttt{WLne-1} & 0.574 & 0.581 & 0.574 & 0.583 & 0.365 \\
+        \texttt{WLne-2} & 0.594 & 0.586 & 0.591 & 0.603 & 0.532 \\
+        \texttt{WLc-n-1} & 0.631 & 0.633 & 0.638 & 0.621 & 0.828 \\
+        \texttt{WLc-n-2} & 0.616 & 0.616 & 0.621 & 0.621 & 0.941 \\
+        \texttt{WLc-ne-1} & 0.630 & 0.630 & 0.632 & 0.626 & 0.935 \\
+        \texttt{WLc-ne-2} & 0.627 & 0.616 & 0.621 & 0.621 & 0.571 \\
         \bottomrule
       \end{tabular}
  }
@@ -325,10 +327,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \toprule
         & Last mean & All-levels mean & Last median & All-levels median & p value \\
         \midrule
-        \texttt{WLc-1} & 0.622 & 0.620 & 0.633 & 0.617 & 0.935 \\
-        \texttt{WLc-2} & 0.611 & 0.626 & 0.605 & 0.617 & 0.327 \\
-        \texttt{WLce-1} & 0.618 & 0.627 & 0.633 & 0.622 & 0.295 \\
-        \texttt{WLce-2} & 0.625 & 0.628 & 0.622 & 0.625 & 0.851 \\
+        \texttt{WLc-n-1} & 0.622 & 0.620 & 0.633 & 0.617 & 0.935 \\
+        \texttt{WLc-n-2} & 0.611 & 0.626 & 0.605 & 0.617 & 0.327 \\
+        \texttt{WLc-ne-1} & 0.618 & 0.627 & 0.633 & 0.622 & 0.295 \\
+        \texttt{WLc-ne-2} & 0.625 & 0.628 & 0.622 & 0.625 & 0.851 \\
         \texttt{WLn-1} & 0.625 & 0.619 & 0.617 & 0.633 & 0.615 \\
         \texttt{WLn-2} & 0.604 & 0.615 & 0.600 & 0.617 & 0.438 \\
         \texttt{WLne-1} & 0.633 & 0.610 & 0.627 & 0.617 & 0.095 \\
@@ -348,10 +350,10 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \toprule
         & Last mean & All-levels mean & Last median & All-levels median & p value \\
         \midrule
-        \texttt{WLc-1} & 0.642 & 0.651 & 0.633 & 0.650 & 0.409 \\
-        \texttt{WLc-2} & 0.634 & 0.638 & 0.650 & 0.650 & 0.658 \\
-        \texttt{WLce-2} & 0.643 & 0.649 & 0.633 & 0.661 & 0.619 \\
-        \texttt{WLce-1} & 0.654 & 0.645 & 0.650 & 0.633 & 0.435 \\
+        \texttt{WLc-n-1} & 0.642 & 0.651 & 0.633 & 0.650 & 0.409 \\
+        \texttt{WLc-n-2} & 0.634 & 0.638 & 0.650 & 0.650 & 0.658 \\
+        \texttt{WLc-ne-2} & 0.643 & 0.649 & 0.633 & 0.661 & 0.619 \\
+        \texttt{WLc-ne-1} & 0.654 & 0.645 & 0.650 & 0.633 & 0.435 \\
         \texttt{WLn-1} & 0.635 & 0.645 & 0.650 & 0.650 & 0.369 \\
         \texttt{WLn-2} & 0.645 & 0.650 & 0.644 & 0.650 & 0.476 \\
         \texttt{WLne-1} & 0.643 & 0.634 & 0.647 & 0.633 & 0.464 \\
@@ -368,14 +370,14 @@ To assess whether only using the last aggregation level of the \texttt{WL} resul
         \toprule
         & Last mean & All-levels mean & Last median & All-levels median & p value \\
         \midrule
-        \texttt{wln-1} & 0.621 & 0.627 & 0.633 & 0.633 & 0.975 \\
-        \texttt{wln-2} & 0.622 & 0.606 & 0.630 & 0.608 & 0.097 \\
-        \texttt{wlne-1} & 0.618 & 0.620 & 0.622 & 0.633 & 0.854 \\
-        \texttt{wlne-2} & 0.618 & 0.616 & 0.630 & 0.613 & 0.952 \\
-        \texttt{wlc-1} & 0.644 & 0.645 & 0.633 & 0.644 & 0.886 \\
-        \texttt{wlc-2} & 0.653 & 0.660 & 0.650 & 0.667 & 0.597 \\
-        \texttt{wlce-1} & 0.649 & 0.646 & 0.650 & 0.650 & 0.695 \\
-        \texttt{wlce-2} & 0.645 & 0.662 & 0.647 & 0.667 & 0.074 \\
+        \texttt{WLn-1} & 0.621 & 0.627 & 0.633 & 0.633 & 0.975 \\
+        \texttt{WLn-2} & 0.622 & 0.606 & 0.630 & 0.608 & 0.097 \\
+        \texttt{WLne-1} & 0.618 & 0.620 & 0.622 & 0.633 & 0.854 \\
+        \texttt{WLne-2} & 0.618 & 0.616 & 0.630 & 0.613 & 0.952 \\
+        \texttt{WLc-n-1} & 0.644 & 0.645 & 0.633 & 0.644 & 0.886 \\
+        \texttt{WLc-n-2} & 0.653 & 0.660 & 0.650 & 0.667 & 0.597 \\
+        \texttt{WLc-ne-1} & 0.649 & 0.646 & 0.650 & 0.650 & 0.695 \\
+        \texttt{WLc-ne-2} & 0.645 & 0.662 & 0.647 & 0.667 & 0.074 \\
         \bottomrule
       \end{tabular}
  }
