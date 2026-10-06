@@ -1,0 +1,982 @@
+{
+  "accuracy": 0.6102941176470589,
+  "score": 0.3647901850044569,
+  "clf_score": 0.3647901850044569,
+  "clf_par10": 4149.718269897058,
+  "vbs_par10": 3084.5703769117645,
+  "sbs_par10": 6004.462240154412,
+  "sbs_test_par10": 5199.239757352943,
+  "sbs_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+  "solvers_par10": {
+    "OR-Tools CP-SAT 9.14 (complete)": 5981.386490669118,
+    "SCIP 2025-06-13 (complete)": 6126.684236360295,
+    "Exact 2025-06-02 (complete)": 5199.239757352941,
+    "SCIP-NaPS 1.00a2 (complete)": 5756.089127786764,
+    "UWrMaxSat-SCIP 2025-06-04 (complete)": 6004.462240154412,
+    "Sat4j CP 2025-06-06 (complete)": 11676.29050352941,
+    "Picat 2025-06-16 (complete)": 7992.503207,
+    "CASHWMaxSATDisjCom-S 2025-06-01 (complete)": 8373.658073713235
+  },
+  "predictions": {
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB05/aloul/FPGA_SAT05/normalized-chnl40_50_pb.cnf.cr.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.085889
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB05/aloul/FPGA_SAT05/normalized-fpga14_12_sat_pb.cnf.cr.fzn": {
+      "pred": 7,
+      "true": 1,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.017567
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/liu/dbst/normalized-dbst_v30_e350_d15_mw10_1.opb.PB06.fzn": {
+      "pred": 4,
+      "true": 5,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "Sat4j CP 2025-06-06 (complete)",
+      "par10": 4.25766
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/liu/dbst/normalized-dbst_v30_e350_d15_mw10_8.opb.PB06.fzn": {
+      "pred": 4,
+      "true": 5,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "Sat4j CP 2025-06-06 (complete)",
+      "par10": 11.8392
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/liu/dbst/normalized-dbst_v50_e1000_d25_mw10_9.opb.PB06.fzn": {
+      "pred": 5,
+      "true": 5,
+      "pred_solver": "Sat4j CP 2025-06-06 (complete)",
+      "true_solver": "Sat4j CP 2025-06-06 (complete)",
+      "par10": 15.2457
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/manquiho/Aardal_1/normalized-cuww3.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.152555
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/manquiho/Aardal_1/normalized-prob10.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.03463
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/manquiho/Aardal_1/normalized-prob3.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 42.2706
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/manquiho/Aardal_1/normalized-prob4.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.041079
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/manquiho/Aardal_1/normalized-prob8.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.095811
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/tsp/normalized-t3002.11tsp11.1900557574.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.838279
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/tsp/normalized-t3002.11tsp11.1900561384.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.03694
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/tsp/normalized-t3002.11tsp11.1900574974.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.058048
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/tsp/normalized-t3002.11tsp11.1900579996.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 4.6504
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1110968094.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.304978
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1110973364.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.340295
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1110974372.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.016133
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1110977780.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.021671
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1111219348.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.363524
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/namasivayam/wnqueen/normalized-t2001.13queen13.1111224255.fzn": {
+      "pred": 1,
+      "true": 4,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.444092
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/prestwich/armies/normalized-army11.17ls.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.315325
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/prestwich/armies/normalized-army8.9ls.fzn": {
+      "pred": 0,
+      "true": 4,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.035933
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/submitted-PB06/roussel/normalized-pigeon-cardinality-41-40.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.017421
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/web/uclid_pb_benchmarks/normalized-ooo.rf6.ucl.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.053573
+    },
+    "data/selected-PB25/PB24/normalized-PB06/DEC-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/ppp-problems/normalized-ppp:1-12,16.fzn": {
+      "pred": 6,
+      "true": 7,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.996255
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/mps-v2-20-10/www.csit.fsu.edu/~burkardt/datasets/mps/normalized-mps-v2-20-10-nazareth.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.010808
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/mps-v2-20-10/www.csit.fsu.edu/~burkardt/datasets/mps/normalized-mps-v2-20-10-testprob.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.018149
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/logic-synthesis/normalized-alu4.b.fzn": {
+      "pred": 7,
+      "true": 1,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 3.01092
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/primes-dimacs-cnf/normalized-aim-100-6_0-yes1-1.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.010693
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/primes-dimacs-cnf/normalized-ii16d2.fzn": {
+      "pred": 7,
+      "true": 4,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 196.322
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/routing/normalized-s3-3-3-2pb.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.014739
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/routing/normalized-s3-3-3-5pb.fzn": {
+      "pred": 4,
+      "true": 0,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.017094
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/routing/normalized-s4-4-3-1pb.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.132376
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/ttp/normalized-circ10_3.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/manquinho/ttp/normalized-circ6_3.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/sorensson/garden/normalized-g9x3.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.003979
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB05/sorensson/garden/normalized-g9x9.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.034019
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/domset/normalized-domset_v500_e2000_w30_mw19_16.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/domset/normalized-domset_v500_e2000_w30_mw19_19.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/vtxcov/normalized-vtxcov_v2000_e4000_1.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/vtxcov/normalized-vtxcov_v2000_e4000_11.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/vtxcov/normalized-vtxcov_v2000_e4000_12.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/liu/vtxcov/normalized-vtxcov_v2000_e4000_7.opb.PB06.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/manquiho/golomb-rulers/normalized-OGR_11.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/manquiho/golomb-rulers/normalized-OGR_13.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/manquiho/golomb-rulers/normalized-OGR_7.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 1.1822
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/submitted-PB06/manquiho/market-split/normalized-opt-market-split_5_40_3.fzn": {
+      "pred": 7,
+      "true": 1,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/course-ass/normalized-ss97-6.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.015168
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/radar/normalized-10:10:4.5:0.5:100.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.577044
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/radar/normalized-10:20:4.5:0.95:100.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 3.44254
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/radar/normalized-10:20:4.5:0.95:98.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 3.09559
+    },
+    "data/selected-PB25/PB24/normalized-PB06/OPT-LIN/web/www.ps.uni-sb.de/~walser/benchmarks/radar/normalized-30:30:4.5:0.5:100.fzn": {
+      "pred": 1,
+      "true": 3,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "par10": 28.9323
+    },
+    "data/selected-PB25/PB24/normalized-PB07/DEC-NLC/submittedPB07/manquinho/dbsg/normalized-dbsg_200_25_5_15.fzn": {
+      "pred": 2,
+      "true": 1,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 359.437
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-LIN/submittedPB07/aksoy/area_delay/normalized-fir04_area_delay.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.031906
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/bsg/normalized-bsg_100_25_5.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/bsg/normalized-bsg_10_4_2.fzn": {
+      "pred": 6,
+      "true": 6,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 0.018957
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/bsg/normalized-bsg_200_10_4.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/mds/normalized-mds_100_10_4.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 12.548
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/mis/normalized-mis_200_10_2.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 1264.59
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/manquinho/mis/normalized-mis_500_10_2.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB07/OPT-NLC/submittedPB07/roussel/factor-mod-B/factor-mod-size=7-P0=71-P1=131-P2=37-P3=29-P4=71-P5=79-P6=47-P7=41-B.fzn": {
+      "pred": 6,
+      "true": 6,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 0.079974
+    },
+    "data/selected-PB25/PB24/normalized-PB09/OPT-LIN/featureSubscription/normalized-50-250-false-45-90-4-3000opt.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 2.42425
+    },
+    "data/selected-PB25/PB24/normalized-PB09/OPT-LIN/flexray/normalized-fx75.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB10/DEC-LIN/oliveras/j30/normalized-j3013_3-sat.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 1.54069
+    },
+    "data/selected-PB25/PB24/normalized-PB10/OPT-NLC/oren/keeloq_tasca_instances/normalized-90_rounds_5_errors.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 1.71526
+    },
+    "data/selected-PB25/PB24/normalized-PB11/OPT-LIN/kullmann/normalized-sbox_4_shg.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.235497
+    },
+    "data/selected-PB25/PB24/normalized-PB12/DEC-LIN/sroussel/ShortestPathBA/normalized-BeauxArts_K69.fzn": {
+      "pred": 6,
+      "true": 6,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 8.08757
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/3COL-FromCNF/normalized-3col-almost3reg-l060-r059-n1.cnf-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 3,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "par10": 718.309
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/3COL-FromCNF/normalized-3col-left3reg-l030-r029-n1.cnf-extracted.pb.metafix.fzn": {
+      "pred": 4,
+      "true": 7,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.177524
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/3COL/normalized-3col-left3reg-l020-r019-n1.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.037014
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ECGRID-FromCNF/normalized-ECgrid3x20split.cnf-extracted.pb.metafix.fzn": {
+      "pred": 1,
+      "true": 4,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 1.67157
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ECGRID-FromCNF/normalized-ECgrid3x80split.cnf-extracted.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.118591
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ECGRID-FromCNF/normalized-ECgrid5x50split.cnf-extracted.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 3,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "par10": 48.2546
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ECGRID-FromCNF/normalized-ECgrid5x90split.cnf-extracted.pb.metafix.fzn": {
+      "pred": 3,
+      "true": 7,
+      "pred_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/EC_ODD_GRIDS/normalized-ECgrid3x30split.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.033024
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/EC_ODD_GRIDS/normalized-ECgrid5x40split.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.047082
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/EC_ODD_GRIDS/normalized-ECgrid5x60split.fzn": {
+      "pred": 4,
+      "true": 1,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 14.3474
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/EC_ODD_GRIDS/normalized-ECgrid5x80split.fzn": {
+      "pred": 3,
+      "true": 4,
+      "pred_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 212.835
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-pmg-14-UNSAT.shuffled-as.sat05-3942.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-regular-n30-d4-i1.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 4,
+      "true": 7,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-tseitin-regular-n134-d3-i3-f.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-tseitin-regular-n32-d3-i1-r2.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.008437
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-tseitin-regular-n34-d3-i2-r2.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.007252
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/DEC-LIN/ProofComplexity-Extracted-Cardinality-Constraints/ProofComplexity/normalized-tseitin-regular-n48-d3-i1-f.cnf.gz-plain.pb.metafix.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.012217
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/OPT-LIN/dt-problems/normalized-lo_10x10_004.opb.metafix.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.007606
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/OPT-LIN/dt-problems/normalized-lo_10x10_008.opb.metafix.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.008619
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/OPT-LIN/minlplib2-pb-0.1.0/opb/normalized-graphpart_2pm-0088-0888.lin.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.023558
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/OPT-NLC/minlplib2-pb-0.1.0/opb/normalized-autocorr_bern30-08.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB15eval/OPT-NLC/minlplib2-pb-0.1.0/opb/normalized-graphpart_3g-0344-0344.fzn": {
+      "pred": 6,
+      "true": 1,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 1317.21
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/elffers/EC_RANDOM_GRAPHS/normalized-ECrand6reg-v091-n1.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.043045
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/elffers/Instances3col_OPB/normalized-3col-almost3reg-l080-r079-n1.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/elffers/rand6reg/normalized-rand6reg-v071-n1.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.064579
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/nossum/normalized-sha1-size112-round23-0.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/nossum/normalized-sha1-size96-round21-6.fzn": {
+      "pred": 7,
+      "true": 4,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 5.73317
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/quimper/SyncCodes/d_n_k/normalized-3_6_5.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 0.00289
+    },
+    "data/selected-PB25/PB24/normalized-PB16/DEC-LIN/quimper/SyncCodes/d_n_k/normalized-5_6_18.fzn": {
+      "pred": 7,
+      "true": 4,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 3.29159
+    },
+    "data/selected-PB25/PB24/normalized-PB16/OPT-LIN/lion9-single-obj/normalized-single-obj-f12-ACDoubleLoss.seq-B-3-combined-EDCBAir.fzn": {
+      "pred": 4,
+      "true": 0,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 49.2281
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/devriendt/bitvector_multiplication_selection/equalities/array_comm/normalized-16arraycomm_teq_tvars_greater.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.097806
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/devriendt/bitvector_multiplication_selection/equalities/array_diag/normalized-13array_diag_greater.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.271687
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/devriendt/bitvector_multiplication_selection/equalities/diag_spec/normalized-16diag_spec_greater.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.095144
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/devriendt/bitvector_multiplication_selection/inequalities/ineq10/normalized-13array_ineq10.fzn": {
+      "pred": 0,
+      "true": 6,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 4.13453
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/devriendt/bitvector_multiplication_selection/inequalities/ineq8/normalized-27array_alg_ineq8.fzn": {
+      "pred": 0,
+      "true": 3,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "SCIP-NaPS 1.00a2 (complete)",
+      "par10": 1.20894
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/domset/domset-fixedrows-r10-tiling/normalized-domset-hexgrid_10_007.fzn": {
+      "pred": 1,
+      "true": 4,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.009926
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/even-colouring/ec-stargrid-04_shuffle/normalized-ec_stargrid_04_036.shuf-2.fzn": {
+      "pred": 1,
+      "true": 4,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 647.682
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/even-colouring/ec-stargrid-05_shuffle/normalized-ec_stargrid_05_075.shuf-3.fzn": {
+      "pred": 1,
+      "true": 7,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/even-colouring/ec-stargrid-06_shuffle/normalized-ec_stargrid_06_072.shuf-3.fzn": {
+      "pred": 1,
+      "true": 2,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/subsetcard/random4reg_opb/normalized-subsetcard-geq-random4reg-60.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.02971
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/subsetcard/random4reg_opb_shuffle/normalized-subsetcard-geq-random4reg-15.shuf-2.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.014058
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/vertex-cover/noverticaledges-v1/normalized-grid4_27.fzn": {
+      "pred": 1,
+      "true": 6,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 0.061
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/vertex-cover/vc-grids-v2_shuffle/normalized-grid4_33.shuf-3.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.650426
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/CombinatorialBenchmarksPBsolvers/vertex-cover/vc-grids-v3_shuffle/normalized-grid8_99.shuf-2.fzn": {
+      "pred": 6,
+      "true": 1,
+      "pred_solver": "Picat 2025-06-16 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/MIPLIB01/dec/miplib3/normalized-p0201.0.u.fzn": {
+      "pred": 7,
+      "true": 1,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 5.10724
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/vliew-nonlinear-d139f28/equalities/wallace_spec/normalized-28wallace_spec_greater_tvars.fzn": {
+      "pred": 1,
+      "true": 5,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "Sat4j CP 2025-06-06 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/DEC-LIN/nordstrom/vliew-nonlinear-d139f28/inequalities/OPB/ineq6/normalized-31array_alg_ineq6.fzn": {
+      "pred": 4,
+      "true": 0,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/ihalainen/PBO-clique-coloring/normalized-clique-coloring-max-clique-n=13-t=7.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/dominating_set/normalized-dominating_set_hexgrid_opt_r6_c60.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.02326
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/evencolouring/linear/normalized-evencolouring_opt_linear_random6regular_nvert_101.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.327696
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/evencolouring/unit/normalized-evencolouring_opt_unit_random6regular_nvert_091.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.296139
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/evencolouring/unit/normalized-evencolouring_opt_unit_random6regular_nvert_111.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.054755
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/evencolouring/unit/normalized-evencolouring_opt_unit_random6regular_nvert_501.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 381.883
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/injcomp/injcomp_opt_3layers_maxall_lastlayerdiv2/normalized-injcomp_opt_3layers_maxall_lastlayerdiv2_size_22.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.097205
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/linpeb/linearized_pebbling_opt_layeredfan_down/normalized-linearized_pebbling_opt_layeredfan_down_r10_c20_a6.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.068524
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/maxcut/maxcut_opt_complete_5-partite_inlv/normalized-maxcut_opt_complete_5-partite_inlv_nvert_25.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 13.0341
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/maxcut/maxcut_opt_complete_6-partite_inlv/normalized-maxcut_opt_complete_6-partite_inlv_nvert_69.fzn": {
+      "pred": 7,
+      "true": 7,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/multverif/diagcomm_greater/normalized-mult_diagcomm_opt_greater_teq_nbits_03.fzn": {
+      "pred": 4,
+      "true": 4,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 0.005966
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/CoreGuidedPB/multverif/diagcomm_less/normalized-mult_diagcomm_opt_less_teq_nbits_17.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.208731
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/KNAP/strongly_correlated/normalized-knapPI_3_200_10000_5_-93992.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.13817
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/KNAP/strongly_correlated/normalized-knapPI_3_50_1000_2_-1678.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.006309
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/nordstrom/KNAP/weakly_correlated_span/normalized-knapPI_12_1000_1000_3_-17136.fzn": {
+      "pred": 1,
+      "true": 1,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 0.142408
+    },
+    "data/selected-PB25/PB24/normalized-PB24/OPT-LIN/pettersson/StableMatchings/KidneyTransplantBenchmarks/normalized-KE_60_004.fzn": {
+      "pred": 1,
+      "true": 0,
+      "pred_solver": "SCIP 2025-06-13 (complete)",
+      "true_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "par10": 0.016017
+    },
+    "data/selected-PB25/PB25/normalized-PB25/DEC-LIN/koops/normalized-mat11_9_triangular.fzn": {
+      "pred": 4,
+      "true": 6,
+      "pred_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "true_solver": "Picat 2025-06-16 (complete)",
+      "par10": 19.9306
+    },
+    "data/selected-PB25/PB25/normalized-PB25/DEC-LIN/koops/normalized-mat15_15_identity_complement.fzn": {
+      "pred": 0,
+      "true": 4,
+      "pred_solver": "OR-Tools CP-SAT 9.14 (complete)",
+      "true_solver": "UWrMaxSat-SCIP 2025-06-04 (complete)",
+      "par10": 5.24921
+    },
+    "data/selected-PB25/PB25/normalized-PB25/OPT-LIN/sakai/PB25-bnn-verification-20250419/instances/normalized-bnn_mnist_7_label9_adversarial_norm_inf.fzn": {
+      "pred": 7,
+      "true": 1,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "SCIP 2025-06-13 (complete)",
+      "par10": 270.917
+    },
+    "data/selected-PB25/PB25/normalized-PB25/OPT-LIN/sakai/PB25-bnn-verification-20250419/instances/normalized-bnn_mnist_back_image_32_label3_adversarial_norm_1.fzn": {
+      "pred": 7,
+      "true": 2,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    },
+    "data/selected-PB25/PB25/normalized-PB25/OPT-LIN/sakai/PB25-bnn-verification-20250419/instances/normalized-bnn_mnist_back_image_73_label5_adversarial_norm_inf.fzn": {
+      "pred": 2,
+      "true": 2,
+      "pred_solver": "Exact 2025-06-02 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 668.389
+    },
+    "data/selected-PB25/PB25/normalized-PB25/OPT-LIN/sakai/PB25-bnn-verification-20250419/instances/normalized-bnn_mnist_rot_16_label5_adversarial_norm_0.fzn": {
+      "pred": 7,
+      "true": 2,
+      "pred_solver": "CASHWMaxSATDisjCom-S 2025-06-01 (complete)",
+      "true_solver": "Exact 2025-06-02 (complete)",
+      "par10": 18000.0
+    }
+  },
+  "hyperparameters": {
+    "max_depth": 10,
+    "max_features": "log2",
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "n_estimators": 600,
+    "random_state": 42
+  }
+}
