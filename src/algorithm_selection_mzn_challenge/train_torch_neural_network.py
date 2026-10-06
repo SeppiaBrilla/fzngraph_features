@@ -4,6 +4,7 @@ from multiprocessing import Pool
 from sklearn.metrics import accuracy_score
 from sklearn.model_selection import ParameterGrid, StratifiedKFold
 from sklearn.decomposition import PCA
+from sklearn.pipeline import Pipeline
 from functools import partial
 from sklearn.preprocessing import MinMaxScaler
 from tqdm import tqdm
@@ -19,7 +20,10 @@ from common.torch_mlp import TorchMLPWrapper
 
 LAYER_SIZE = (150, 200, 150)
 
-def cross_val_score(clf, X:np.ndarray, y:np.ndarray, scores:np.ndarray, cv:int=5) -> float:
+N_COMPONENTS = 100
+
+
+def cross_val_score(clf:Pipeline, X:np.ndarray, y:np.ndarray, scores:np.ndarray, cv:int=5) -> float:
     kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
     pred_scores = []
     quantiles = np.linspace(0, 100, 8)
@@ -36,8 +40,7 @@ def cross_val_score(clf, X:np.ndarray, y:np.ndarray, scores:np.ndarray, cv:int=5
         pred_score = sum([scores_val[i,p] for i,p in enumerate(pred)])
         t0 = sum([scores_val[i,0] for i,_ in enumerate(pred)])
         t1 = sum([scores_val[i,1] for i,_ in enumerate(pred)])
-        t2 = sum([scores_val[i,2] for i,_ in enumerate(pred)])
-        sb_score = max(t1, t0, t2)
+        sb_score = max(t1, t0)
 
         pred_scores.append(pred_score/sb_score)
 
@@ -49,7 +52,7 @@ def _evaluate_combination(params: dict, X: np.ndarray, y: np.ndarray, scores:np.
     torch.manual_seed(42)
 
     device = 'auto'
-    model = TorchMLPWrapper(**params, hidden_layer_sizes=LAYER_SIZE, device=device)
+    model = Pipeline([('pca', PCA(n_components=N_COMPONENTS, random_state=42)), ('torch', TorchMLPWrapper(**params, hidden_layer_sizes=LAYER_SIZE, device=device))])
     score = cross_val_score(model, X, y, scores, cv=3)
     return {"params": params, "score": score}
 
@@ -129,7 +132,6 @@ def test_nn_torch(clf, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict
 
     pred_score = 0
     chuffed_score = 0
-    cplex_score = 0
     cp_sat_score = 0
     vbs_score = 0
     predictions = {}
@@ -142,23 +144,20 @@ def test_nn_torch(clf, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict
         elif pred == 1:
             pred_score += e['chuffed']
         elif pred == 2:
-            pred_score += e['cplex']
+            pred_score += e['cp-sat']
         else:
             raise Exception(pred)
         chuffed_score += e['chuffed']
         cp_sat_score += e['cp-sat']
-        cplex_score += e['cplex']
-        vbs_score += max(e['chuffed'], e['cp-sat'], e['cplex'])
+        vbs_score += max(e['chuffed'], e['cp-sat'])
 
     print(f"accuracy: {accuracy:.3f}")
-    print('scores:', pred_score, chuffed_score, cp_sat_score, cplex_score, vbs_score)
+    print('scores:', pred_score, chuffed_score, cp_sat_score, vbs_score)
     print(f"predicted score as a percentage of the virtual best: {vbs_score/pred_score:.3f}")
     print(f"cuffed score as a percentage of the virtual best: {vbs_score/chuffed_score:.3f}")
     print(f"cp-sat score as a percentage of the virtual best: {vbs_score/cp_sat_score:.3f}")
-    print(f"cplex score as a percentage of the virtual best: {vbs_score/cplex_score:.3f}")
     print(f"predicted score as a percentage of the chuffed score: {pred_score/chuffed_score:.3f}")
     print(f"predicted score as a percentage of the cp-sat score: {pred_score/cp_sat_score:.3f}")
-    print(f"predicted score as a percentage of the cplex score: {pred_score/cplex_score:.3f}")
 
     return {
         'accuracy': float(accuracy),
@@ -166,7 +165,6 @@ def test_nn_torch(clf, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict
         'vbs_score': float(vbs_score),
         'chuffed_score': float(chuffed_score),
         'cp-sat_score': float(cp_sat_score),
-        'cplex_score': float(cplex_score),
         'clf_vbs': float(vbs_score/pred_score),
         'chuffed_vbs': float(vbs_score/chuffed_score),
         'cp-sat_vbs': float(vbs_score/cp_sat_score),
@@ -176,12 +174,12 @@ def test_nn_torch(clf, X_test:np.ndarray, y_test:np.ndarray, test_data:list[dict
         'hyperparameters': hyperparam
         }
 
-def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], hyperparams:None|dict=None) -> dict:
+def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], hyperparams:None|dict=None, use_pca:bool=True) -> dict:
     mp.set_start_method('spawn', force=True)
 
     X_train = np.array([e['features'] for e in train_data])
     y_train = np.array([e['label'] for e in train_data])
-    scores = np.array([[e['cp-sat'], e['chuffed'], e['cplex']] for e in train_data])
+    scores = np.array([[e['cp-sat'], e['chuffed'], e['cp-sat']] for e in train_data])
     X_test = np.array([e['features'] for e in test_data])
     y_test = np.array([e['label'] for e in test_data])
 
@@ -189,13 +187,15 @@ def train_and_test_nn_torch(train_data:list[dict], test_data:list[dict], hyperpa
     X_train = scaler.fit_transform(X_train)
     X_test = scaler.transform(X_test)
 
+    N_COMPONENTS = 100 if use_pca else X_train.shape[1]
+
     if hyperparams is None:
         hyperparam = find_hyperparameters_nn_torch(X_train, y_train, scores, 1)
     else:
         hyperparam = hyperparams
 
     device = 'auto'
-    clf = TorchMLPWrapper(**hyperparam, hidden_layer_sizes=LAYER_SIZE, device=device)
+    clf = Pipeline([('pca', PCA(n_components=N_COMPONENTS, random_state=42)), ('torch', TorchMLPWrapper(**hyperparam, hidden_layer_sizes=LAYER_SIZE, device=device))])
     print('hyperparameters:', hyperparam)
     print(np.mean(cross_val_score(clf, X_train, y_train, scores, cv=3)))
 

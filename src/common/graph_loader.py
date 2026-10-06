@@ -84,54 +84,12 @@ class Graph:
         return g
 
 def load_graph(file:str|TextIO) -> Graph:
-    fp = file
+    filepath = None
     if isinstance(file, str):
-        fp = open(file)
+        filepath = file
+    elif hasattr(file, 'name'):
+        filepath = getattr(file, 'name')
 
-    assert fp.readable(), f'file {fp} not readable'
-
-    nodes_lines = False
-    edges_lines = False
     graph = Graph()
-    nodes = {}
-    for line in fp.readlines():
-        line = line.strip()
-        if line == 'nodes:':
-            nodes_lines = True
-            assert not edges_lines
-            continue
-        if line == 'edges:':
-            assert nodes_lines
-            nodes_lines = False
-            edges_lines = True
-            continue
-
-        if nodes_lines:
-            """The structure is: 'idx: label -- type -- extra'
-               Extra is dependent on the type:
-                - literal_node have: value -- type
-                - var_node have: domain -- type
-                - par_node have: value -- type
-                - other nodes do not have extra
-            """
-            [idx, components_str] = line.split(': ')
-            components = components_str.split(' -- ')
-            label = components[0]
-            node_type = components[1]
-            if node_type == 'literal_node':
-                node = Node(label=label, _type=node_type, value=(components[2], components[3]))
-            elif node_type == 'var_node':
-                node = Node(label=label, _type=node_type, value=(components[2], components[3]))
-            elif node_type == 'par_node':
-                node = Node(label=label, _type=node_type, value=(components[2], components[3]))
-            else:
-                node = Node(label=label, _type=node_type)
-            graph.add_node(node)
-            nodes[idx] = node
-        if edges_lines:
-            """The structure is: 'idx: idx_node1--idx_node2--edge_label'"""
-            [idx, components_str] = line.split(': ')
-            [idx_node1, idx_node2, label] = components_str.split('--')
-            graph.add_edge(_from=nodes[idx_node1], _to=nodes[idx_node2], e=Edge(label))
-
+    graph.filepath = filepath
     return graph

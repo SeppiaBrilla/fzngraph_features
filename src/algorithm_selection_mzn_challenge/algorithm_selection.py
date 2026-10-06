@@ -4,7 +4,9 @@ import pandas as pd
 import sys
 import os
 import json
+import time
 
+sys.path.append(os.path.dirname(__file__))
 sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 
 from train_torch_neural_network import train_and_test_nn_torch
@@ -14,7 +16,11 @@ from train_as_svc import train_and_test_svc
 # from train_as_gradient_boosting import train_and_test_gradient_boosting
 from copy import deepcopy
 import numpy as np
-from common.feature_extraction import get_features
+from feature_extraction import get_features
+import subprocess
+
+import warnings
+warnings.filterwarnings("ignore")
 
 import random
 random.seed(42)
@@ -23,28 +29,32 @@ np.random.seed(42)
 def load_data() -> pd.DataFrame: #list[dict]:
     '''
     loads the algorithm selection dataset. Contains, for each datapoint:
-        - the model name
+        - the model name (problem)
         - the instance name
-        - the correct label (0: chuffed better, 1: cp-sat better, 2: they are the same)
+        - the year
         - solving time of the chuffed solver
         - solving time of the cp-sat solver
         - the path of the corresponding graph
     '''
-    data = pd.read_csv('./data/algorithm_selection_dataset_score.csv')
+    data = pd.read_csv('./data/data_cp-sat_1_chuffed_1.csv')
     return data
 
 def data_to_list(data:pd.DataFrame) -> list[dict]:
     dict_data = []
     for i in range(len(data)):
         d = data.iloc[i]
-        dict_data.append({'model': d['model'],
-         'name': d['name'],
-         'label': d['label'],
-         'chuffed': d['chuffed'],
-         'cp-sat': d['cp-sat'],
-         'cplex': d['cplex'],
-         'graph': './data/' + d['graph']}
-        )
+        cp_sat_val = float(d['cp-sat'])
+        chuffed_val = float(d['chuffed'])
+        label = 0 if cp_sat_val > chuffed_val else (1 if chuffed_val > cp_sat_val else 2)
+        dict_data.append({
+            'model': d['problem'],
+            'name': d['instance'],
+            'year': int(d['year']),
+            'label': label,
+            'chuffed': chuffed_val,
+            'cp-sat': cp_sat_val,
+            'graph': './data/graphs/' + str(d['graph'])
+        })
 
     return dict_data
 
@@ -53,7 +63,8 @@ def split_stratified_by_gap(df:pd.DataFrame, rnd_state, current_fold:int, max_fo
     assert current_fold >= 0, f'current fold must positive. got {current_fold}'
     assert current_fold < max_fold, f'current fold must be < max fold. got current fold:{current_fold} and max fold: {max_fold}'
 
-    solvers = df[['cp-sat', 'chuffed', 'cplex']]
+    solver_cols = [c for c in ['cp-sat', 'chuffed'] if c in df.columns]
+    solvers = df[solver_cols]
     df['gap'] = solvers.max(axis=1) - solvers.min(axis=1)
 
     df['gap_strata'] = pd.qcut(df['gap'], q=5, labels=False, duplicates='drop')
@@ -82,19 +93,20 @@ def split_data(data:list[dict]) -> tuple[list[dict],list[dict]]:
     return train_data, test_data
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'fzn2feat', 'combined'])
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'sat-features', 'fzn2feat', 'combined'])
 parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'gb'])
 parser.add_argument('--cv-fold', required=True, type=int)
 parser.add_argument('--max-cv', required=True, type=int)
 parser.add_argument('--result', required=True, type=str)
 parser.add_argument('--rnd-state', required=True, type=int)
+parser.add_argument('--pca', required=False, action='store_true', help='Apply PCA to reduce the number of features')
 parser.add_argument('--all-levels', action='store_true', help='Use a concatenation of all aggregation levels instead of only the last one')
 
 def main():
     args = parser.parse_args()
     features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wlc-2', 'wl-1',
                           'wl-2', 'wln-1', 'wln-2', 'wle-1', 'wle-2',
-                          'wlne-1', 'wlne-2', 'fzn2feat', 'combined'] = args.features
+                          'wlne-1', 'wlne-2', 'sat-features', 'fzn2feat', 'combined'] = args.features
     model:str = args.model
     fold:int = args.cv_fold
     output_file:str = args.result
@@ -112,38 +124,28 @@ def main():
 
 
     train_data, test_data = data_to_list(train_data), data_to_list(test_data)
-    # with open(output_file) as f:
-    #         hyperparams = json.load(f)['hyperparameters']
-    # if not 'size' in hyperparams:
-    #     return
 
     #data preparation, decide features type and pruning
     train_data, test_data = get_features(train_data, test_data, features_type, all_levels, f'data/features/{features_type.replace("-","")}-{fold}-{rnd_state}.csv')
     print('computed features, starting to train model')
 
     if model == 'rnd-forest':
-        # with open(output_file) as f:
-        #     hyperparams = json.load(f)['hyperparameters']
-        #     del hyperparams['size']
         hyperparams = None
-        res = train_and_test_rnd_forest(train_data, test_data, features_type != 'fzn2feat', is_wlc= 'wlc' in features_type, hyperparam=hyperparams)
+        res = train_and_test_rnd_forest(train_data, test_data, features_type != 'fzn2feat', is_wlc= 'wlc' in features_type, hyperparam=hyperparams, use_pca=args.pca)
     elif model == 'svc':
-        # with open(output_file) as f:
-        #     hyperparams = json.load(f)['hyperparameters']
-        #     print('loaded hyperparams')
-        #     del hyperparams['size']
+
         hyperparams = None
-        res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat', hyperparam=hyperparams)
-    # elif model == 'gb':
-    #     res = train_and_test_gradient_boosting(train_data, test_data)
+        res = train_and_test_svc(train_data, test_data, features_type != 'fzn2feat', hyperparam=hyperparams, use_pca=args.pca)
     elif model == 'nn':
-        # with open(output_file) as f:
-        #     hyperparams = json.load(f)['hyperparameters']
-        res = train_and_test_nn_torch(train_data, test_data, None)
+        res = train_and_test_nn_torch(train_data, test_data, None, use_pca=args.pca)
     else:
         raise Exception(f'still unsupported model type {model}')
     with open(output_file, 'w') as f:
         json.dump(res, f)
 
 if __name__ == '__main__':
+    env_8 = dict(os.environ, JULIA_NUM_THREADS="8")
+    server_8 = subprocess.Popen(['ZincToWl', "--server", "/tmp/zinctowl_8.sock"], env=env_8, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL, shell=True)
+    time.sleep(2)
     main()
+    server_8.terminate()

@@ -12,3 +12,8 @@ paper/*.out
 *.synctex.gz
 *.vtc
 main.pdf
+ZTW
+ftg
+*.fzn
+*.cnf
+selected-PB25

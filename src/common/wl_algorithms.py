@@ -1,12 +1,19 @@
+import json
+import os
+import socket
+import subprocess
+import tempfile
 from typing import Literal
-try:
-    from .graph_loader import is_global
-except:
-    from graph_loader import is_global
+
 try:
     from .graph_loader import Graph
-except:
-    from graph_loader import Graph
+except ImportError:
+    from graph_loader import is_global, Graph, load_graph
+
+import shutil
+
+# Path to the compiled ZincToWl Julia executable binary
+ZINC_TO_WL_BIN = shutil.which("ZincToWl") or os.path.expanduser("~/.local/bin/ZincToWl")
 
 def get_effective_domain_size(domain: str, type_str: str) -> int:
     if type_str == 'bool' or domain in ['bool', 'false..true', 'true..false']:
@@ -40,592 +47,215 @@ def get_effective_domain_size(domain: str, type_str: str) -> int:
         pass
     return 1
 
-COLORS = {}
-
-def standard_wl(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements the standard wl algorithm wihout taking into account neither node types nor edge types
-    """
-
-    node_colors:list[str] = ['1' for _ in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-def wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements thewl algorithm taking into account node types as features
-    """
-
-    node_colors:list[str] = [str(node._type) for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    # out = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-
-def undirected_wl_with_node_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements thewl algorithm taking into account node types as features
-    """
-
-    node_colors:list[str] = [str(node._type) for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-            neighbour_colors[from_idx].append(node_colors[to_idx])
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-def wl_with_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements thewl algorithm taking into account edge types as features
-    """
-
-    node_colors:list[str] = ['1' for _ in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), e in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx] + ',' + e.label)
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-def wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements thewl algorithm taking into account node and edge types as features
-    """
-
-    node_colors:list[str] = [str(node._type) for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), e in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx] + ',' + e.label)
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-def undirected_wl_with_node_and_edge_features(graph:Graph, colors:dict, max_iter:int=10, training:bool=True, max_colors:int|None=None) -> list[int]|list[list[int]]:
-    """
-    implements thewl algorithm taking into account node and edge types as features
-    """
-
-    node_colors:list[str] = [str(node._type) for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels = [[int(c) for c in node_colors]]
-
-    changed = True
-    iter = 0
-    while changed and iter < max_iter:
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), e in graph.edge_iterator:
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx] + ',' + e.label)
-            neighbour_colors[from_idx].append(node_colors[to_idx] + ',' + e.label)
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            if max_colors == None or len(colors.keys()) <= max_colors:
-                for uc in sorted(set(updated_colors)):
-                    if not uc in colors:
-                        colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        iter += 1
-        changed = not node_colors == new_node_colors
-        node_colors = new_node_colors
-        levels.append([int(c) for c in node_colors])
-
-    return levels
-
-def wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[list[int]],dict]:
-    node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels_list = [[int(c) for c in node_colors]]
-
-    constraints_per_variable = 0
-    constraints_per_par = 0
-    n_var, n_par = 0, 0
-    pairs = {}
-
-    levels = {}
-
-    for iter in range(max_iter):
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
-                continue
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            for uc in sorted(set(updated_colors)):
-                if uc in colors.values():
-                    continue
-                if not uc in colors:
-                    colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        levels[iter] = [int(c) for c in node_colors]
-        node_colors = new_node_colors
-        levels_list.append([int(c) for c in node_colors])
-
-    for node in graph.nodes:
-        if node._type == 'var_node':
-            constraints_per_variable += len(graph.edge_from(node))
-            n_var += 1
-        elif node._type in ['par_node', 'literal_node']:
-            constraints_per_par += len(graph.edge_from(node))
-            n_par += 1
-        elif is_global(node._type) or 'lin_' in node._type or 'multi_' in node._type:
-            for _from, _ in graph.edge_to(node):
-                pair = (_from._type if _from._type != 'literal_node' else 'par_node', node._type)
-                if not pair in pairs:
-                    pairs[pair] = 0
-                pairs[pair] += 1
-
-    globals_set = sorted(set(p[1] for p in pairs.keys()))
-    for g in globals_set:
-        color = g + ',' + ''.join(sorted(t for t, f in pairs.keys() if f == g))
-        h = str(hash(g))
-        assert h in node_colors, (g, pairs)
-        if training and not color in colors:
-            colors[color] = str(hash(color))
-        if color in colors:
-            node_colors[node_colors.index(h)] = str(hash(color))
-
-    levels_list[-1] = [int(c) for c in node_colors]
-
-    extra_info = {
-        'levels': levels,
-        'globals_pairs': pairs,
-        'cpv': constraints_per_variable / n_var,
-        'cpp': constraints_per_par / n_par,
-        'n_nodes': len(graph.nodes)
-    }
-    return levels_list, extra_info
-
-
-def undirected_wl_extended_features(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
-    node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    constraints_per_variable = 0
-    constraints_per_par = 0
-    n_var, n_par = 0, 0
-    pairs = {}
-
-    levels = {}
-
-    for iter in range(max_iter):
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), _ in graph.edge_iterator:
-            if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
-                continue
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx])
-            if  not (is_global(_from._type) or 'lin_' in _from._type or 'multi_' in _from._type):
-                neighbour_colors[from_idx].append(node_colors[to_idx])
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            for uc in sorted(set(updated_colors)):
-                if uc in colors.values():
-                    continue
-                if not uc in colors:
-                    colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        # levels[iter] = [int(c) for c in node_colors]
-        node_colors = new_node_colors
-
-    for node in graph.nodes:
-        if node._type == 'var_node':
-            constraints_per_variable += len(graph.edge_from(node))
-            n_var += 1
-        elif node._type in ['par_node', 'literal_node']:
-            constraints_per_par += len(graph.edge_from(node))
-            n_par += 1
-        elif is_global(node._type) or 'lin_' in node._type or 'multi_' in node._type:
-            for _from, _ in graph.edge_to(node):
-                pair = (_from._type if _from._type != 'literal_node' else 'par_node', node._type)
-                if not pair in pairs:
-                    pairs[pair] = 0
-                pairs[pair] += 1
-
-    globals_set = sorted(set(p[1] for p in pairs.keys()))
-    for g in globals_set:
-        color = g + ',' + ''.join(sorted(t for t, f in pairs.keys() if f == g))
-        h = str(hash(g))
-        assert h in node_colors, (g, pairs)
-        if training and not color in colors:
-            colors[color] = str(hash(color))
-        if color in colors:
-            node_colors[node_colors.index(h)] = str(hash(color))
-
-    extra_info = {
-        'levels': levels,
-        'globals_pairs': pairs,
-        'cpv': constraints_per_variable / n_var,
-        'cpp': constraints_per_par / n_par,
-        'n_nodes': len(graph.nodes)
+def _get_graph_filepath(graph: Graph | str) -> tuple[str, bool]:
+    """Returns the file path for a graph object or string path, and a flag if a temp file was created."""
+    if isinstance(graph, str) and os.path.exists(graph):
+        return graph, False
+    if hasattr(graph, 'filepath') and graph.filepath and os.path.exists(graph.filepath):
+        return graph.filepath, False
+    
+    tfile = tempfile.NamedTemporaryFile(suffix='.graph', mode='w', delete=False)
+    nodes_dict = {}
+    tfile.write("nodes:\n")
+    for idx, node in enumerate(graph.nodes):
+        nodes_dict[hash(node)] = idx
+        extra = ""
+        if node.value is not None:
+            if isinstance(node.value, tuple):
+                extra = f" -- {' -- '.join(str(v) for v in node.value)}"
+            else:
+                extra = f" -- {node.value}"
+        tfile.write(f"{idx}: {node.label} -- {node._type}{extra}\n")
+    
+    tfile.write("edges:\n")
+    for e_idx, ((n1, n2), edge) in enumerate(graph.edge_iterator):
+        idx1 = nodes_dict[hash(n1)]
+        idx2 = nodes_dict[hash(n2)]
+        tfile.write(f"{e_idx}: {idx1}--{idx2}--{edge.label}\n")
+    
+    tfile.close()
+    return tfile.name, True
+
+def _resolve_colors_path(colors: str | dict | None) -> str:
+    """Resolves the colors file path for the external ZincToWl binary."""
+    if isinstance(colors, str) and colors:
+        path = colors
+    elif isinstance(colors, dict) and '_bin_path' in colors:
+        path = colors['_bin_path']
+    elif isinstance(colors, dict) and 'path' in colors:
+        path = colors['path']
+    else:
+        path = 'colors.bin'
+
+    parent_dir = os.path.dirname(path)
+    if parent_dir:
+        os.makedirs(parent_dir, exist_ok=True)
+
+    if os.path.exists(path) and os.path.getsize(path) == 0:
+        try:
+            os.remove(path)
+        except OSError:
+            pass
+    return path
+
+def send_to_server(socket_path: str, args: list[str]) -> str:
+    s = socket.socket(socket.AF_UNIX, socket.SOCK_STREAM)
+    s.connect(socket_path)
+    msg = "\0".join(args) + "\0\n"
+    s.sendall(msg.encode())
+    all_data = ""
+    while True:
+        data = s.recv(4096)
+        if not data:
+            break
+        all_data += data.decode()
+    s.close()
+    return all_data[all_data.index('{'):]
+
+def _run_zinc_to_wl(
+    graph: Graph | str,
+    colors: str | dict | None,
+    method: str,
+    max_iter: int = 1,
+    training: bool = True,
+    socket_path: str = "/tmp/zinctowl_8.sock"
+) -> tuple[dict[str, int], dict]:
+    graph_path, created_temp = _get_graph_filepath(graph)
+    target_graph_path = graph_path
+
+    colors_bin = _resolve_colors_path(colors)
+
+    cmd = [
+        target_graph_path,
+        '-m', method,
+        '-k', str(max_iter),
+        '--colors', colors_bin,
+        '-t', 'true' if training else 'false',
+        '-c', '8'
+    ]
+
+    data = ""
+    if os.path.exists(socket_path):
+        try:
+            data = send_to_server(socket_path, cmd)
+        except Exception:
+            pass
+
+    if not data:
+        sub_cmd = [ZINC_TO_WL_BIN] + cmd
+        proc = subprocess.run(sub_cmd, capture_output=True, text=True, check=True)
+        data = proc.stdout
+
+    if created_temp and os.path.exists(graph_path):
+        try:
+            os.remove(graph_path)
+        except OSError:
+            pass
+
+    raw_text = data.strip()
+    if not raw_text:
+        raise ValueError(f"ZincToWl produced no output for method {method} on {graph_path}")
+    
+    try:
+        res_json = json.loads(raw_text)
+    except Exception as e:
+        print(target_graph_path)
+        print(raw_text)
+        raise e
+
+    scalar_fields = {
+        'n_nodes', 'cpv', 'cpp', 'd_ratio_int_vars', 'd_ratio_bool_vars',
+        'o_deg_cons', 'o_deg_std', 'o_dom_deg', 'v_ent_deg_vars', 'v_sum_domdeg_vars'
     }
 
-    return  [int(c) for c in node_colors], extra_info
-
-
-def wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[list[int]],dict]:
-    node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
-
-    levels_list = [[int(c) for c in node_colors]]
-
-    constraints_per_variable = 0
-    constraints_per_par = 0
-    n_var, n_par = 0, 0
-    pairs = {}
-
-    levels = {}
-
-    for iter in range(max_iter):
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), e in graph.edge_iterator:
-            if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
-                continue
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx] + ',' + e.label)
-
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
-
-        if training:
-            for uc in sorted(set(updated_colors)):
-                if uc in colors.values():
-                    continue
-                if not uc in colors:
-                    colors[uc] = str(hash(uc))
-
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        levels[iter] = [int(c) for c in node_colors]
-        node_colors = new_node_colors
-        levels_list.append([int(c) for c in node_colors])
-
-    for node in graph.nodes:
-        if node._type == 'var_node':
-            constraints_per_variable += len(graph.edge_from(node))
-            n_var += 1
-        elif node._type in ['par_node', 'literal_node']:
-            constraints_per_par += len(graph.edge_from(node))
-            n_par += 1
-        elif is_global(node._type) or 'lin_' in node._type or 'multi_' in node._type:
-            for _from, _ in graph.edge_to(node):
-                pair = (_from._type if _from._type != 'literal_node' else 'par_node', node._type)
-                if not pair in pairs:
-                    pairs[pair] = 0
-                pairs[pair] += 1
-
-    globals_set = sorted(set(p[1] for p in pairs.keys()))
-    for g in globals_set:
-        color = g + ',' + ''.join(sorted(t for t, f in pairs.keys() if f == g))
-        h = str(hash(g))
-        assert h in node_colors, (g, pairs)
-        if training and not color in colors:
-            colors[color] = str(hash(color))
-        if color in colors:
-            node_colors[node_colors.index(h)] = str(hash(color))
-
-    levels_list[-1] = [int(c) for c in node_colors]
-
+    color_counts: dict[str, int] = {}
+    globals_pairs: dict[tuple[str, str], int] = {}
     extra_info = {
-        'levels': levels,
-        'globals_pairs': pairs,
-        'cpv': constraints_per_variable / n_var,
-        'cpp': constraints_per_par / n_par,
-        'n_nodes': len(graph.nodes)
+        'n_nodes': int(res_json.get('n_nodes', 0)),
+        'cpv': float(res_json.get('cpv', 0.0)),
+        'cpp': float(res_json.get('cpp', 0.0)),
+        'd_ratio_int_vars': float(res_json.get('d_ratio_int_vars', 0.0)),
+        'd_ratio_bool_vars': float(res_json.get('d_ratio_bool_vars', 0.0)),
+        'o_deg_cons': float(res_json.get('o_deg_cons', 0.0)),
+        'o_deg_std': float(res_json.get('o_deg_std', 0.0)),
+        'o_dom_deg': float(res_json.get('o_dom_deg', 0.0)),
+        'v_ent_deg_vars': float(res_json.get('v_ent_deg_vars', 0.0)),
+        'v_sum_domdeg_vars': float(res_json.get('v_sum_domdeg_vars', 0.0)),
+        'globals_pairs': globals_pairs
     }
 
-    return levels_list, extra_info
+    for k, v in res_json.items():
+        if k in scalar_fields:
+            continue
+        elif k.startswith('(') and k.endswith(')'):
+            inner = k[1:-1]
+            if ',' in inner:
+                t1, t2 = inner.split(',', 1)
+                globals_pairs[(t1.strip(), t2.strip())] = int(v)
+            else:
+                globals_pairs[(k, "")] = int(v)
+        else:
+            color_counts[str(k)] = int(v)
 
-def undirected_wl_extended_features_with_edges(graph:Graph, colors:dict, max_iter:int=1, training:bool=True) -> tuple[list[int],dict]:
-    node_colors:list[str] = [str(node._type if node._type != 'literal_node' else 'par_node') for node in graph.nodes]
-    node_idx = {node.label:idx for idx, node in enumerate(graph.nodes)}
-    for uc in sorted(set(node_colors)):
-        if not uc in colors:
-            colors[uc] = str(hash(uc))
-    node_colors = [colors[uc] for uc in node_colors]
+    return color_counts, extra_info
 
-    constraints_per_variable = 0
-    constraints_per_par = 0
-    n_var, n_par = 0, 0
-    pairs = {}
+def standard_wl(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl', max_iter=max_iter, training=training)
+    return color_counts
 
-    levels = {}
+def wl_with_node_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl-n', max_iter=max_iter, training=training)
+    return color_counts
 
-    for iter in range(max_iter):
-        neighbour_colors = [[] for _ in node_colors]
-        for (_from, _to), e in graph.edge_iterator:
-            if is_global(_to._type) or 'lin_' in _to._type or 'multi_' in _to._type:
-                continue
-            from_idx = node_idx[_from.label]
-            to_idx = node_idx[_to.label]
-            neighbour_colors[to_idx].append(node_colors[from_idx] + ',' + e.label)
-            if  not (is_global(_from._type) or 'lin_' in _from._type or 'multi_' in _from._type):
-                neighbour_colors[from_idx].append(node_colors[to_idx] + ',' + e.label)
+def undirected_wl_with_node_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl-un', max_iter=max_iter, training=training)
+    return color_counts
 
-        updated_colors = []
-        for i in range(len(neighbour_colors)):
-            updated_colors.append(node_colors[i] + "".join(sorted(neighbour_colors[i])))
+def wl_with_edge_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl-e', max_iter=max_iter, training=training)
+    return color_counts
 
-        if training:
-            for uc in sorted(set(updated_colors)):
-                if uc in colors.values():
-                    continue
-                if not uc in colors:
-                    colors[uc] = str(hash(uc))
+def wl_with_node_and_edge_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl-ne', max_iter=max_iter, training=training)
+    return color_counts
 
-        new_node_colors = [colors[uc] if uc in colors else node_colors[i] for i, uc in enumerate(updated_colors)]
-        node_colors = new_node_colors
+def undirected_wl_with_node_and_edge_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 10, training: bool = True) -> dict[str, int]:
+    color_counts, _ = _run_zinc_to_wl(graph, colors, 'wl-une', max_iter=max_iter, training=training)
+    return color_counts
 
-    for node in graph.nodes:
-        if node._type == 'var_node':
-            constraints_per_variable += len(graph.edge_from(node))
-            n_var += 1
-        elif node._type in ['par_node', 'literal_node']:
-            constraints_per_par += len(graph.edge_from(node))
-            n_par += 1
-        elif is_global(node._type) or 'lin_' in node._type or 'multi_' in node._type:
-            for _from, _ in graph.edge_to(node):
-                pair = (_from._type if _from._type != 'literal_node' else 'par_node', node._type)
-                if not pair in pairs:
-                    pairs[pair] = 0
-                pairs[pair] += 1
+def wl_extended_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 1, training: bool = True) -> tuple[dict[str, int], dict]:
+    return _run_zinc_to_wl(graph, colors, 'wl-nc', max_iter=max_iter, training=training)
 
-    globals_set = sorted(set(p[1] for p in pairs.keys()))
-    for g in globals_set:
-        color = g + ',' + ''.join(sorted(t for t, f in pairs.keys() if f == g))
-        h = str(hash(g))
-        assert h in node_colors, (g, pairs)
-        if training and not color in colors:
-            colors[color] = str(hash(color))
-        if color in colors:
-            node_colors[node_colors.index(h)] = str(hash(color))
+def undirected_wl_extended_features(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 1, training: bool = True) -> tuple[dict[str, int], dict]:
+    return _run_zinc_to_wl(graph, colors, 'wl-unc', max_iter=max_iter, training=training)
 
-    extra_info = {
-        'levels': levels,
-        'globals_pairs': pairs,
-        'cpv': constraints_per_variable / n_var,
-        'cpp': constraints_per_par / n_par,
-        'n_nodes': len(graph.nodes)
-    }
+def wl_extended_features_with_edges(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 1, training: bool = True) -> tuple[dict[str, int], dict]:
+    return _run_zinc_to_wl(graph, colors, 'wl-nec', max_iter=max_iter, training=training)
 
-    return  [int(c) for c in node_colors], extra_info
+def undirected_wl_extended_features_with_edges(graph: Graph | str, colors: str | dict | None = 'colors.bin', max_iter: int = 1, training: bool = True) -> tuple[dict[str, int], dict]:
+    return _run_zinc_to_wl(graph, colors, 'wl-unec', max_iter=max_iter, training=training)
 
-
-def wl_features(graph:Graph,
-                colors:dict,
-                max_iter:int=10,
-                training:bool=True,
-                wl_type:Literal['standard','node_features','edge_features','node_edge_features']='standard',
-                max_colors:int|None=None) -> list[int]|list[list[int]]:
+def wl_features(graph: Graph | str,
+                colors: str | dict | None = 'colors.bin',
+                max_iter: int = 10,
+                training: bool = True,
+                wl_type: Literal['standard', 'node_features', 'edge_features', 'node_edge_features'] = 'standard',
+                max_colors: int | None = None) -> dict[str, int]:
     if wl_type == 'standard':
-        return standard_wl(graph, colors, max_iter, training, max_colors)
+        return standard_wl(graph, colors, max_iter, training)
     elif wl_type == 'edge_features':
-        return wl_with_edge_features(graph, colors, max_iter, training, max_colors)
+        return wl_with_edge_features(graph, colors, max_iter, training)
     elif wl_type == 'node_features':
-        return wl_with_node_features(graph, colors, max_iter, training, max_colors)
+        return wl_with_node_features(graph, colors, max_iter, training)
     elif wl_type == 'node_edge_features':
-        return wl_with_node_and_edge_features(graph, colors, max_iter, training, max_colors)
+        return wl_with_node_and_edge_features(graph, colors, max_iter, training)
 
     raise Exception(f'unrecognised wl_type: {wl_type}')
 
 if __name__ == '__main__':
-    from graph_loader import load_graph
-    # with open('./data/graphs/tower-sep-tower_070_070_15_070-08.graph') as f:
-    with open('./data/graphs/model4_opt-sep-test05.graph') as f:
-        graph = load_graph(f)
-    n_iterations = 3
-    colors = {}
-    wl_features(graph, colors, max_iter=n_iterations, wl_type='standard')
-    print(f'number of colors with standard wl ({n_iterations} iters):', len(colors.keys()))
-    colors = {}
-    wl_features(graph, colors, max_iter=n_iterations, wl_type='node_features')
-    print(f'number of colors with node-features agumented wl ({n_iterations} iters):', len(colors.keys()))
-    colors = {}
-    wl_features(graph, colors, max_iter=n_iterations, wl_type='edge_features')
-    print(f'number of colors with edge-features agumented wl ({n_iterations} iters):', len(colors.keys()))
-    colors = {}
-    wl_features(graph, colors, max_iter=n_iterations, wl_type='node_edge_features')
-    print(f'number of colors with node and edge-features agumented wl ({n_iterations} iters):', len(colors.keys()))
-    print("===========================================================================")
-    colors = {}
-    wl_extended_features(graph, colors)
-    print(len(colors))
+    graph_path = './data/graphs/accap-2019-accap_instance3.graph'
+    if os.path.exists(graph_path):
+        res, extra = wl_extended_features(graph_path, '/tmp/test_colors.bin')
+        print("WL color counts sample:", list(res.items())[:5])
+        print("Extended features extra_info:", extra)
+

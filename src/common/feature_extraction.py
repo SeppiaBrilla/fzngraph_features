@@ -6,6 +6,7 @@ from typing import Literal
 from collections import Counter
 import pandas as pd
 import os
+import gc
 
 def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
     train_features = np.array([t['features'] for t in train_data])
@@ -17,320 +18,142 @@ def prune(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[
         t['features'] = np.array(np.delete(t['features'], idxs).tolist() + [np.sum(np.array(t['features'])[idxs])])
     return train_data, test_data
 
-def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int, all_levels:bool, undirected=False) -> tuple[list[dict],list[dict]]:
-    colors = {}
-    MAX_COLORS = None
+def compute_wl_features(train_data:list[dict], test_data:list[dict], wl_type:Literal['standard','node_features','edge_features','node_edge_features'], max_iter:int, all_levels:bool, undirected=False, colors_file:str='colors.bin') -> tuple[list[dict],list[dict]]:
+    os.makedirs(os.path.dirname(os.path.abspath(colors_file)), exist_ok=True)
 
     for t in tqdm(train_data, desc='train data'):
-        with open(t['graph']) as f:
-            g = load_graph(f)
+        graph_input = t.get('graph', t.get('flatzinc'))
         if undirected:
             if wl_type == 'node_features':
-                res = undirected_wl_with_node_features(g, colors, max_iter, True, MAX_COLORS)
+                res = undirected_wl_with_node_features(graph_input, colors_file, max_iter, True)
             elif wl_type == 'node_edge_features':
-                res = undirected_wl_with_node_and_edge_features(g, colors, max_iter, True, MAX_COLORS)
+                res = undirected_wl_with_node_and_edge_features(graph_input, colors_file, max_iter, True)
             else:
                 raise Exception(f'unsupported undirected type {wl_type}')
         else:
-            res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=True, max_colors=MAX_COLORS)
-        t['features'] = res
+            res = wl_features(graph_input, colors_file, wl_type=wl_type, max_iter=max_iter, training=True)
+        t['color_counts'] = res
 
-    colors_names = set(sorted(set(int(c) for c in colors.values())))
+    colors_names = sorted(list(set(color for t in train_data for color in t['color_counts'].keys())))
     for t in train_data:
-        res = t['features']
-        if all_levels:
-            features = []
-            for r in res:
-                counter = Counter(r)
-                n = len(r)
-                features.extend([counter.get(color, 0) / n for color in colors_names])
-        else:
-            r = res[-1]
-            counter = Counter(r)
-            n = len(r)
-            features = [counter.get(color, 0) / n for color in colors_names]
-        t['features'] = features
+        c_counts = t['color_counts']
+        n = sum(c_counts.values()) or 1
+        t['features'] = [c_counts.get(color, 0) / n for color in colors_names]
 
     for t in tqdm(test_data, desc='test data'):
-        with open(t['graph']) as f:
-            g = load_graph(f)
+        graph_input = t.get('graph', t.get('flatzinc'))
         if undirected:
             if wl_type == 'node_features':
-                res = undirected_wl_with_node_features(g, colors, max_iter, False, MAX_COLORS)
+                res = undirected_wl_with_node_features(graph_input, colors_file, max_iter, False)
             elif wl_type == 'node_edge_features':
-                res = undirected_wl_with_node_and_edge_features(g, colors, max_iter, False, MAX_COLORS)
+                res = undirected_wl_with_node_and_edge_features(graph_input, colors_file, max_iter, False)
             else:
                 raise Exception(f'unsupported undirected type {wl_type}')
         else:
-            res = wl_features(g, colors, wl_type=wl_type, max_iter=max_iter, training=False, max_colors=MAX_COLORS)
-        if all_levels:
-            features = []
-            for r in res:
-                assert isinstance(r, list), type(r)
-                counter = Counter(r)
-                n = len(r)
-                features.extend([counter.get(color, 0) / n for color in colors_names])
-        else:
-            r = res[-1]
-            assert isinstance(r, list), type(r)
-            counter = Counter(r)
-            n = len(r)
-            features = [counter.get(color, 0) / n for color in colors_names]
-        t['features'] = features
+            res = wl_features(graph_input, colors_file, wl_type=wl_type, max_iter=max_iter, training=False)
+        c_counts = res
+        n = sum(c_counts.values()) or 1
+        t['features'] = [c_counts.get(color, 0) / n for color in colors_names]
 
     return prune(train_data, test_data)
 
-def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool, undirected:bool, all_levels:bool) -> tuple[list[dict],list[dict]]:
-    colors = {}
-
+def compute_custom_wl(train_data:list[dict], test_data:list[dict], max_iter:int, edge:bool, undirected:bool, all_levels:bool, colors_file:str) -> tuple[list[dict],list[dict]]:
     g_pairs = set()
-    for t in tqdm(train_data, desc='train data'):
-        with open(t['graph']) as f:
-            g = load_graph(f)
+    for i, t in tqdm(enumerate(train_data), desc='train data', total=len(train_data)):
+        graph_input = t.get('graph', t.get('flatzinc'))
+        is_train = True
         if undirected and not edge:
-            res, extra = undirected_wl_extended_features(g, colors, max_iter=max_iter, training=True)
-            res = [res]
+            color_counts, extra = undirected_wl_extended_features(graph_input, colors_file, max_iter=max_iter, training=is_train)
         elif undirected and edge:
-            res, extra = undirected_wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
-            res = [res]
+            color_counts, extra = undirected_wl_extended_features_with_edges(graph_input, colors_file, max_iter=max_iter, training=is_train)
         elif not undirected and edge:
-            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+            color_counts, extra = wl_extended_features_with_edges(graph_input, colors_file, max_iter=max_iter, training=is_train)
         else:
-            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
-        t['features'] = res
+            color_counts, extra = wl_extended_features(graph_input, colors_file, max_iter=max_iter, training=is_train)
+        t['color_counts'] = color_counts
         t['extra'] = extra
         for pair in extra['globals_pairs'].keys():
             g_pairs.add(pair)
+        gc.collect()
 
     g_pairs = sorted(g_pairs)
 
-    colors_names = set(sorted(set(int(c) for c in colors.values())))
+    colors_names = sorted(list(set(color for t in train_data for color in t['color_counts'].keys())))
     for t in train_data:
-        res = t['features']
-        if all_levels:
-            features = []
-            for r in res:
-                counter = Counter(r)
-                features.extend([counter.get(color, 0) / t['extra']['n_nodes'] for color in colors_names])
-            features = np.array(features)
-        else:
-            r = res[-1]
-            counter = Counter(r)
-            features = np.array([counter.get(color, 0) / t['extra']['n_nodes'] for color in colors_names])
+        n_nodes = max(t['extra']['n_nodes'], 1)
+        c_counts = t['color_counts']
+        color_feats = [c_counts.get(color, 0) / n_nodes for color in colors_names]
+        
         tot_pairs = max(sum(t['extra']['globals_pairs'].values()), 1)
         extra = t['extra']
-        t['features'] = features.tolist() + [extra['globals_pairs'].get(p,0)/tot_pairs for p in g_pairs] +\
-            [extra['cpv'], extra['cpp']] #, extra['int_vars'], extra['bool_vars'], extra['set_vars'], extra['int_pars'], extra['bool_pars'], extra['set_pars'],
-            #  extra['avg_dom_vars'], extra['log_search_space'], extra['log_obj_dom']]
+        pair_feats = [extra['globals_pairs'].get(p, 0) / tot_pairs for p in g_pairs]
+        
+        extra_scalar_feats = [
+            extra['cpv'],
+            extra['cpp'],
+            extra['d_ratio_int_vars'],
+            extra['d_ratio_bool_vars'],
+            extra['o_deg_cons'],
+            extra['o_deg_std'],
+            extra['o_dom_deg'],
+            extra['v_ent_deg_vars'],
+            extra['v_sum_domdeg_vars']
+        ]
+        extra_scalar_feats = np.nan_to_num(extra_scalar_feats, nan=0.0, posinf=0.0, neginf=0.0).tolist()
+        t['features'] = color_feats + pair_feats + extra_scalar_feats
 
     for t in tqdm(test_data, desc='test data'):
-        with open(t['graph']) as f:
-            g = load_graph(f)
+        graph_input = t.get('graph', t.get('flatzinc'))
         if undirected and not edge:
-            res, extra = undirected_wl_extended_features(g, colors, max_iter=max_iter, training=True)
-            res = [res]
+            color_counts, extra = undirected_wl_extended_features(graph_input, colors_file, max_iter=max_iter, training=False)
         elif undirected and edge:
-            res, extra = undirected_wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
-            res = [res]
+            color_counts, extra = undirected_wl_extended_features_with_edges(graph_input, colors_file, max_iter=max_iter, training=False)
         elif not undirected and edge:
-            res, extra = wl_extended_features_with_edges(g, colors, max_iter=max_iter, training=True)
+            color_counts, extra = wl_extended_features_with_edges(graph_input, colors_file, max_iter=max_iter, training=False)
         else:
-            res, extra = wl_extended_features(g, colors, max_iter=max_iter, training=True)
+            color_counts, extra = wl_extended_features(graph_input, colors_file, max_iter=max_iter, training=False)
 
-        if all_levels:
-            features = []
-            for r in res:
-                counter = Counter(r)
-                features.extend([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
-            features = np.array(features)
-        else:
-            r = res[-1]
-            counter = Counter(r)
-            features = np.array([counter.get(color, 0) / extra['n_nodes'] for color in colors_names])
-
+        n_nodes = max(extra['n_nodes'], 1)
+        color_feats = [color_counts.get(color, 0) / n_nodes for color in colors_names]
+        
         tot_pairs = max(sum(extra['globals_pairs'].values()), 1)
-        t['features'] = features.tolist() + [extra['globals_pairs'].get(p,0)/tot_pairs for p in g_pairs] +\
-            [extra['cpv'], extra['cpp']] #, extra['int_vars'], extra['bool_vars'], extra['set_vars'], extra['int_pars'], extra['bool_pars'], extra['set_pars'],
-            #  extra['avg_dom_vars'], extra['log_search_space'], extra['log_obj_dom']]
-        # 'int_vars': int_vars / n_var,
-        # 'bool_vars': bool_vars / n_var,
-        # 'set_vars': set_vars / n_var,
-        # 'int_pars': int_pars / n_par,
-        # 'bool_pars': bool_pars / n_par,
-        # 'set_pars': set_pars / n_par,
+        pair_feats = [extra['globals_pairs'].get(p, 0) / tot_pairs for p in g_pairs]
+        
+        extra_scalar_feats = [
+            extra['cpv'],
+            extra['cpp'],
+            extra['d_ratio_int_vars'],
+            extra['d_ratio_bool_vars'],
+            extra['o_deg_cons'],
+            extra['o_deg_std'],
+            extra['o_dom_deg'],
+            extra['v_ent_deg_vars'],
+            extra['v_sum_domdeg_vars']
+        ]
+        extra_scalar_feats = np.nan_to_num(extra_scalar_feats, nan=0.0, posinf=0.0, neginf=0.0).tolist()
+        t['features'] = color_feats + pair_feats + extra_scalar_feats
+
     return prune(train_data, test_data)
 
-def get_fzn2feat(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict],list[dict]]:
-    fzn2feat_features = pd.read_csv('./data/fzn2feat_joined.csv')
-    for t in train_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = d.values[0]
-
-    for t in test_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = d.values[0]
-
-    return train_data, test_data
-
-def load_features(train_data:list[dict], test_data:list[dict], features_file:str) -> tuple[list[dict],list[dict]]:
-    features = pd.read_csv(features_file)
-    for t in train_data:
-        d = features[(features['problem'] == t['model']) & (features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = d.values[0]
-
-    for t in test_data:
-        d = features[(features['problem'] == t['model']) & (features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = d.values[0]
-
-    return train_data, test_data
 
 
-def agument_features(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict], list[dict]]:
-    fzn2feat_features = pd.read_csv('./data/fzn2feat_joined.csv')
-    fzn2feat_cols = ['c_max_deg_cons', 'c_min_deg_cons', 'c_avg_domdeg_cons', 'v_avg_dom_vars', 'v_max_dom_vars', 'v_min_dom_vars', 'c_ent_deg_cons', 'o_dom_avg' ]
-    for t in train_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d[fzn2feat_cols]
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = list(t['features']) + list(d.values[0])
-
-    for t in test_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d[fzn2feat_cols]
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = list(t['features']) + list(d.values[0])
-
-    return train_data, test_data
-
-def combine(train_data:list[dict], test_data:list[dict]) -> tuple[list[dict], list[dict]]:
-    fzn2feat_features = pd.read_csv('./data/fzn2feat_joined.csv')
-    for t in train_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = list(t['features']) + list(d.values[0])
-
-    for t in test_data:
-        d = fzn2feat_features[(fzn2feat_features['problem'] == t['model']) & (fzn2feat_features['name'] == t['name'])]
-        d = d.drop(columns=['problem','name'])
-        assert len(d.values) == 1, f'not one element: {d.values}, {t}'
-        t['features'] = list(t['features']) + list(d.values[0])
-
-    return train_data, test_data
 
 def save(train_data:list[dict], test_data:list[dict], save_name:str):
+    os.makedirs(os.path.dirname(save_name), exist_ok=True)
     saves = []
-    for t in train_data:
-        inst:dict = {i:v for i, v in enumerate(list(t['features']))}
-        inst['problem'] = t['model']
-        inst['name'] = t['name']
-        saves.append(inst)
-    for t in test_data:
-        inst:dict = {i:v for i, v in enumerate(list(t['features']))}
-        inst['problem'] = t['model']
-        inst['name'] = t['name']
-        saves.append(inst)
+    for dataset in (train_data, test_data):
+        for t in dataset:
+            inst:dict = {i:v for i, v in enumerate(list(t['features']))}
+            if 'flatzinc' in t:
+                inst['flatzinc'] = t['flatzinc']
+            if 'model' in t:
+                inst['problem'] = t['model']
+            if 'year' in t:
+                inst['year'] = t['year']
+            if 'name' in t:
+                inst['instance'] = t['name']
+            saves.append(inst)
 
     pd.DataFrame(saves).to_csv(save_name, index=None)
 
-def get_features(
-        train_data:list[dict],
-        test_data:list[dict],
-        features_type:Literal['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wlun-1', 'wlun-2', 'wlune-1', 'wlune-2', 'wln-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat', 'combined'],
-        all_levels:bool=False,
-        save_name:str="Unk"
-    ) -> tuple[list[dict], list[dict]]:
-    '''
-    for each feature-type returns the modified train and dataset agumented with the corresponding features
-    '''
 
-    if features_type == 'wl-1':
-        return compute_wl_features(train_data, test_data, 'standard', 1, all_levels)
-    elif features_type == 'wl-2':
-        return compute_wl_features(train_data, test_data, 'standard', 2, all_levels)
-
-    elif features_type == 'wln-1':
-        return compute_wl_features(train_data, test_data, 'node_features', 1, all_levels)
-    elif features_type == 'wln-2':
-        return compute_wl_features(train_data, test_data, 'node_features', 2, all_levels)
-
-    elif features_type == 'wle-1':
-        return compute_wl_features(train_data, test_data, 'edge_features', 1, all_levels)
-    elif features_type == 'wle-2':
-        return compute_wl_features(train_data, test_data, 'edge_features', 2, all_levels)
-
-    elif features_type == 'wlne-1':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 1, all_levels)
-    elif features_type == 'wlne-2':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 2, all_levels)
-
-    elif features_type == 'wlun-1':
-        return compute_wl_features(train_data, test_data, 'node_features', 1, False, undirected=True)
-    elif features_type == 'wlun-2':
-        return compute_wl_features(train_data, test_data, 'node_features', 2, False, undirected=True)
-
-    elif features_type == 'wlune-1':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 1, False, undirected=True)
-    elif features_type == 'wlune-2':
-        return compute_wl_features(train_data, test_data, 'node_edge_features', 2, False, undirected=True)
-
-    elif features_type == 'wlc-1':
-        if os.path.exists(save_name):
-            train, test = load_features(train_data, test_data, save_name)
-        else:
-            train, test = compute_custom_wl(train_data, test_data, 1, False, False, all_levels)
-            save(train, test, save_name)
-        # return train, test
-        return agument_features(train, test)
-    elif features_type == 'wlc-2':
-        if os.path.exists(save_name):
-            train, test = load_features(train_data, test_data, save_name)
-        else:
-            train, test = compute_custom_wl(train_data, test_data, 2, False, False, all_levels)
-            save(train, test, save_name)
-        # return train, test
-        return agument_features(train, test)
-
-    elif features_type == 'wlce-1':
-        if os.path.exists(save_name):
-            train, test = load_features(train_data, test_data, save_name)
-        else:
-            train, test = compute_custom_wl(train_data, test_data, 1, True, False, all_levels)
-            save(train, test, save_name)
-        # return train, test
-        return agument_features(train, test)
-    elif features_type == 'wlce-2':
-        if os.path.exists(save_name):
-            train, test = load_features(train_data, test_data, save_name)
-        else:
-            train, test = compute_custom_wl(train_data, test_data, 2, True, False, all_levels)
-            save(train, test, save_name)
-        # return train, test
-        return agument_features(train, test)
-
-    elif features_type == 'wlcu-1':
-        return compute_custom_wl(train_data, test_data, 1, False, True, all_levels)
-    elif features_type == 'wlcu-2':
-        return compute_custom_wl(train_data, test_data, 2, False, True, all_levels)
-
-    elif features_type == 'wlceu-1':
-        return compute_custom_wl(train_data, test_data, 1, False, True, all_levels)
-    elif features_type == 'wlceu-2':
-        return compute_custom_wl(train_data, test_data, 2, False, True, all_levels)
-
-    elif features_type =='combined':
-        train, test = compute_custom_wl(train_data, test_data, 1, False, False, all_levels)
-        return combine(train, test)
-
-    elif features_type == 'fzn2feat':
-        return get_fzn2feat(train_data, test_data)
-
-    raise Exception(f'unsupported features type {features_type}')

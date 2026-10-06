@@ -32,7 +32,7 @@ class TorchMLPWrapper(BaseEstimator, ClassifierMixin):
     def __init__(self, hidden_layer_sizes=(100,), activation='tanh', solver='adam', 
                  alpha=0.0001, learning_rate='constant', max_iter=15000, 
                  random_state=None, batch_size='auto', tol=1e-4, n_iter_no_change=10,
-                 device='auto'):
+                 device='auto', num_classes=None):
         self.hidden_layer_sizes = hidden_layer_sizes
         self.activation = activation
         self.solver = solver
@@ -44,6 +44,7 @@ class TorchMLPWrapper(BaseEstimator, ClassifierMixin):
         self.tol = tol
         self.n_iter_no_change = n_iter_no_change
         self.device = device
+        self.num_classes = num_classes
         
     def fit(self, X, y):
         if self.random_state is not None:
@@ -53,8 +54,10 @@ class TorchMLPWrapper(BaseEstimator, ClassifierMixin):
             
         self.classes_ = np.unique(y)
         n_samples, n_features = X.shape
-        num_classes = len(self.classes_)
-        # Assuming classes are contiguous from 0. If not, needs mapping, but here they are 0,1,2.
+        if self.num_classes is not None:
+            num_classes = self.num_classes
+        else:
+            num_classes = max(int(np.max(y)) + 1, len(self.classes_))
         
         self.model_ = TorchMLP(n_features, self.hidden_layer_sizes, num_classes, activation=self.activation)
         
