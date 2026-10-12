@@ -13,7 +13,7 @@ except ImportError:
 import shutil
 
 # Path to the compiled ZincToWl Julia executable binary
-ZINC_TO_WL_BIN = shutil.which("ZincToWl") or os.path.expanduser("~/.local/bin/ZincToWl")
+ZINC_TO_WL_BIN = os.environ.get("ZINC_TO_WL_BIN") or shutil.which("ZincToWl") or os.path.expanduser("~/.local/bin/ZincToWl")
 
 def get_effective_domain_size(domain: str, type_str: str) -> int:
     if type_str == 'bool' or domain in ['bool', 'false..true', 'true..false']:

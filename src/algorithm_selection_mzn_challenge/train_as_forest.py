@@ -2,7 +2,7 @@ import numpy as np
 from sklearn.ensemble import RandomForestClassifier
 from multiprocessing import Pool
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import ParameterGrid, StratifiedKFold
+from sklearn.model_selection import ParameterGrid, StratifiedKFold, KFold
 from sklearn.decomposition import PCA
 from sklearn.pipeline import Pipeline
 from functools import partial
@@ -23,23 +23,29 @@ def prepare_cv_folds(
     apply_minmax: bool = True,
 ) -> list[tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]]:
     """
-    Pre-computes and caches PCA and scaling results for each CV fold.
-    This avoids re-fitting PCA repeatedly for every hyperparameter combination in parallel.
+    Pre-computes and caches PCA and scaling results for each inner CV fold.
     """
-    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    gap = scores.max(axis=1) - scores.min(axis=1)
     quantiles = np.linspace(0, 100, 8)
-    gap = np.abs(scores.max(axis=1) - scores.min(axis=1))
     bins = np.unique(np.percentile(gap, quantiles))
     buckets = np.digitize(gap, bins[1:-1])
 
+    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    try:
+        split_gen = list(kf.split(X, buckets))
+    except ValueError:
+        kf_fallback = KFold(n_splits=cv, shuffle=True, random_state=42)
+        split_gen = list(kf_fallback.split(X))
+
     folds_data = []
-    for fold, (train_idx, val_idx) in enumerate(kf.split(X, buckets)):
+    for train_idx, val_idx in split_gen:
         X_train_fold, X_val_fold = X[train_idx].copy(), X[val_idx].copy()
         y_train_fold = y[train_idx]
         scores_val_fold = scores[val_idx]
 
-        if X.shape[1] > n_components:
-            pca = PCA(n_components, random_state=42)
+        n_c = min(X_train_fold.shape[0], X_train_fold.shape[1], n_components)
+        if n_c > 0 and X_train_fold.shape[1] > n_c:
+            pca = PCA(n_components=n_c, random_state=42)
             X_train_fold = pca.fit_transform(X_train_fold)
             X_val_fold = pca.transform(X_val_fold)
 
@@ -56,40 +62,50 @@ def prepare_cv_folds(
 def evaluate_folds_forest(params: dict, folds_data: list) -> float:
     pred_scores = []
     for X_train_fold, y_train_fold, X_val_fold, scores_val in folds_data:
-        clf = RandomForestClassifier(**params, class_weight={0: 1, 1: 1, 2: 1}, n_jobs=1)
+        clf = RandomForestClassifier(**params, n_jobs=1)
         clf.fit(X_train_fold, y_train_fold)
         pred = clf.predict(X_val_fold)
 
-        pred_score = sum([scores_val[i, p if p != 2 else 0] for i, p in enumerate(pred)])
-        t0 = sum([scores_val[i, 0] for i, _ in enumerate(pred)])
-        t1 = sum([scores_val[i, 1] for i, _ in enumerate(pred)])
-        sb_score = max(t1, t0)
-
-        pred_scores.append(pred_score / sb_score if sb_score != 0 else 0)
+        pred_score = sum([scores_val[i, p] for i, p in enumerate(pred)])
+        sb_score = max([sum(scores_val[:, s_idx]) for s_idx in range(scores_val.shape[1])])
+        pred_scores.append(pred_score / sb_score if sb_score > 0 else 0.0)
 
     return float(np.mean(pred_scores))
 
 
 def cross_val_score(clf: Pipeline | RandomForestClassifier, X: np.ndarray, y: np.ndarray, scores: np.ndarray, cv: int = 5) -> float:
-    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
-    pred_scores = []
+    gap = scores.max(axis=1) - scores.min(axis=1)
     quantiles = np.linspace(0, 100, 8)
-    gap = np.abs(scores.max(axis=1) - scores.min(axis=1))
     bins = np.unique(np.percentile(gap, quantiles))
     buckets = np.digitize(gap, bins[1:-1])
-    for fold, (train_idx, val_idx) in enumerate(kf.split(X, buckets)):
-        X_train, X_val = X[train_idx], X[val_idx]
-        y_train = y[train_idx]
-        scores_val = scores[val_idx]
 
-        clf.fit(X_train, y_train)
-        pred = clf.predict(X_val)
-        pred_score = sum([scores_val[i, p if p != 2 else 0] for i, p in enumerate(pred)])
-        t0 = sum([scores_val[i, 0] for i, _ in enumerate(pred)])
-        t1 = sum([scores_val[i, 1] for i, _ in enumerate(pred)])
-        sb_score = max(t1, t0)
+    kf = StratifiedKFold(n_splits=cv, shuffle=True, random_state=42)
+    try:
+        split_gen = list(kf.split(X, buckets))
+    except ValueError:
+        kf_fallback = KFold(n_splits=cv, shuffle=True, random_state=42)
+        split_gen = list(kf_fallback.split(X))
 
-        pred_scores.append(pred_score / sb_score if sb_score != 0 else 0)
+    pred_scores = []
+    for train_idx, val_idx in split_gen:
+        X_train_fold, X_val_fold = X[train_idx].copy(), X[val_idx].copy()
+        y_train_fold = y[train_idx]
+        scores_val_fold = scores[val_idx]
+
+        n_c = min(X_train_fold.shape[0], X_train_fold.shape[1], N_COMPONENTS)
+        steps = []
+        if X_train_fold.shape[1] > n_c:
+            steps.append(('pca', PCA(n_components=n_c, random_state=42)))
+        rf_step = clf.named_steps['rf'] if isinstance(clf, Pipeline) else clf
+        steps.append(('rf', rf_step))
+        fold_clf = Pipeline(steps)
+
+        fold_clf.fit(X_train_fold, y_train_fold)
+        pred = fold_clf.predict(X_val_fold)
+
+        pred_score = sum([scores_val_fold[i, p] for i, p in enumerate(pred)])
+        sb_score = max([sum(scores_val_fold[:, s_idx]) for s_idx in range(scores_val_fold.shape[1])])
+        pred_scores.append(pred_score / sb_score if sb_score > 0 else 0.0)
 
     return float(np.mean(pred_scores))
 
@@ -105,10 +121,9 @@ def find_hyperparameters(
     X: np.ndarray,
     y: np.ndarray,
     scores: np.ndarray,
-    n_jobs: int,
+    n_jobs: int = mp.cpu_count(),
     is_wlc: bool = True,
 ) -> dict:
-
     param_grid = {
         'n_estimators': [n for n in range(200, 1000, 200)],
         'max_features': ['log2', 'sqrt'],
@@ -120,17 +135,14 @@ def find_hyperparameters(
     all_combinations = list(ParameterGrid(param_grid))
     n_combinations = len(all_combinations)
 
-    # Pre-cache PCA and scaling for each CV fold ONCE to optimize parallel performance
     folds_data = prepare_cv_folds(X, y, scores, cv=5, apply_minmax=is_wlc)
-
     worker_fn = partial(_evaluate_combination, folds_data=folds_data)
 
-    # Run in parallel
     results = []
     with Pool(processes=n_jobs) as pool:
         with tqdm(
             total=n_combinations,
-            desc="hyperparameter search",
+            desc="hyperparameter search (RF)",
             unit="combo",
             dynamic_ncols=True,
         ) as pbar:
@@ -141,9 +153,9 @@ def find_hyperparameters(
 
     rows = []
     for r in results:
-        row = {'param': r["params"], "score": r["score"]}
-        rows.append(row)
+        rows.append({'param': r["params"], "score": r["score"]})
 
+    # Maximize score (higher predicted score relative to SBS is better)
     best_score = max(rows, key=lambda x: x['score'])['score']
     equivalent_scores = [r for r in rows if math.isclose(r['score'], best_score, rel_tol=0.001)]
     best_config = min(
@@ -154,126 +166,103 @@ def find_hyperparameters(
         )
     )
     print('best config:', best_config)
-
     return best_config['param']
 
 
-def size_evaluate(param: dict, hyperparams: dict, X: np.ndarray, y: np.ndarray, scores: np.ndarray) -> tuple[int | None, float]:
-    np.random.seed(42)
-    random.seed(42)
-    size = param['feature_size']
-    clf = RandomForestClassifier(**hyperparams, class_weight={0: 1, 1: 1, 2: 1}, n_jobs=1)
-    if size is not None:
-        pca = PCA(size, random_state=42)
-        X_small = pca.fit_transform(X)
-    else:
-        X_small = X
-
-    score = cross_val_score(clf, X_small, y, scores, 3)
-
-    return size, score
-
-
-def find_size(X: np.ndarray, y: np.ndarray, scores: np.ndarray, hyperparams: dict, is_wl: bool) -> int | None:
-    param_grid = {
-        'feature_size': [n for n in range(20, min(X.shape) + 1, 20)] + [None],
-    }
-
-    all_combinations = list(ParameterGrid(param_grid))
-
-    results = []
-    for comb in tqdm(all_combinations):
-        results.append(size_evaluate(comb, hyperparams, X, y, scores))
-
-    rows = []
-    for r in sorted(results, key=lambda x: x[0] if x[0] else 1000):
-        row = r
-        rows.append(row)
-
-    best_config = max(rows, key=lambda x: x[1])
-    print('best config:', best_config)
-
-    return best_config[0]
-
-
-def test_rnd_forest(clf: Pipeline, X_test: np.ndarray, y_test: np.ndarray, test_data: list[dict], hyperparam: dict) -> dict:
+def test_rnd_forest(
+    clf: Pipeline,
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    scores_test: np.ndarray,
+    scores_train: np.ndarray,
+    solvers: list[str],
+    test_data: list[dict],
+    hyperparam: dict
+) -> dict:
     pred = clf.predict(X_test)
     accuracy = accuracy_score(y_test, pred)
 
-    pred_score = 0
-    chuffed_score = 0
-    cp_sat_score = 0
-    vbs_score = 0
+    clf_score = float(sum([scores_test[i, p] for i, p in enumerate(pred)]))
+    vbs_score = float(scores_test.max(axis=1).sum())
+
+    # Single Best Solver determined from training set
+    sbs_idx = int(np.argmax(scores_train.sum(axis=0)))
+    sbs_solver_name = solvers[sbs_idx]
+    sbs_score = float(scores_test[:, sbs_idx].sum())
+
+    denom = vbs_score - sbs_score
+    norm_score = float((clf_score - sbs_score) / denom) if denom > 1e-6 else 0.0
+
+    solver_scores = {s: float(scores_test[:, idx].sum()) for idx, s in enumerate(solvers)}
+
     predictions = {}
     for i, e in enumerate(test_data):
-        x = np.array([X_test[i]])
-        pred = clf.predict(x)[0]
-        predictions[f"{e['model']}-sep-{e['name']}"] = int(pred)
-        if pred == 0:
-            pred_score += e['cp-sat']
-        elif pred == 1:
-            pred_score += e['chuffed']
-        elif pred == 2:
-            pred_score += e['cp-sat']
-        else:
-            raise Exception(pred)
-        chuffed_score += e['chuffed']
-        cp_sat_score += e['cp-sat']
-        vbs_score += max(e['chuffed'], e['cp-sat'])
+        inst_key = f"{e.get('model', '')}-sep-{e.get('name', i)}"
+        predictions[inst_key] = {
+            'pred': int(pred[i]),
+            'true': int(y_test[i]),
+            'pred_solver': solvers[pred[i]],
+            'true_solver': solvers[y_test[i]],
+            'score': float(scores_test[i, pred[i]]),
+        }
 
-    print(f"accuracy: {accuracy:.3f}")
-    print('scores:', pred_score, chuffed_score, cp_sat_score, vbs_score)
-    print(f"predicted score as a percentage of the virtual best: {vbs_score/pred_score:.3f}")
-    print(f"cuffed score as a percentage of the virtual best: {vbs_score/chuffed_score:.3f}")
-    print(f"cp-sat score as a percentage of the virtual best: {vbs_score/cp_sat_score:.3f}")
-    print(f"predicted score as a percentage of the chuffed score: {pred_score/chuffed_score:.3f}")
-    print(f"predicted score as a percentage of the cp-sat score: {pred_score/cp_sat_score:.3f}")
+    print(f"RF Accuracy: {accuracy:.4f}")
+    print(f"Selector Score: {clf_score:.2f} | SBS ({sbs_solver_name}): {sbs_score:.2f} | VBS: {vbs_score:.2f}")
+    print(f"Norm Score (clf - sbs) / (vbs - sbs): {norm_score:.4f}")
 
     return {
         'accuracy': float(accuracy),
-        'clf_score': float(pred_score),
+        'score': float(norm_score),
+        'clf_score': float(clf_score),
         'vbs_score': float(vbs_score),
-        'chuffed_score': float(chuffed_score),
-        'cp-sat_score': float(cp_sat_score),
-        'clf_vbs': float(vbs_score/pred_score),
-        'chuffed_vbs': float(vbs_score/chuffed_score),
-        'cp-sat_vbs': float(vbs_score/cp_sat_score),
-        'clf_chuffed': float(pred_score/chuffed_score),
-        'clf_cp-sat': float(pred_score/cp_sat_score),
+        'sbs_score': float(sbs_score),
+        'sbs_solver': str(sbs_solver_name),
+        'norm_score': float(norm_score),
+        'solver_scores': solver_scores,
         'predictions': predictions,
-        'hyperparameters': hyperparam
+        'hyperparameters': hyperparam,
     }
 
 
-def train_and_test_rnd_forest(train_data: list[dict], test_data: list[dict], is_wl: bool = True, is_wlc: bool = True, hyperparam: None | dict = None, use_pca: bool = True) -> dict:
+def train_and_test_rnd_forest(
+    train_data: list[dict],
+    test_data: list[dict],
+    is_wl: bool = True,
+    is_wlc: bool = True,
+    hyperparam: None | dict = None,
+    use_pca: bool = True,
+) -> dict:
     try:
         mp.set_start_method('spawn', force=True)
     except RuntimeError:
         pass
 
+    solvers = train_data[0]['solvers']
     X_train = np.array([e['features'] for e in train_data])
     y_train = np.array([e['label'] for e in train_data])
-    scores = np.array([[e['cp-sat'], e['chuffed']] for e in train_data])
+    scores_train = np.array([[e[s] for s in solvers] for e in train_data])
+
     X_test = np.array([e['features'] for e in test_data])
     y_test = np.array([e['label'] for e in test_data])
+    scores_test = np.array([[e[s] for s in solvers] for e in test_data])
 
-    if is_wlc:
-        scaler = MinMaxScaler()
-        X_train = scaler.fit_transform(X_train)
-        X_test = scaler.transform(X_test)
+    scaler = MinMaxScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_test = scaler.transform(X_test)
 
-    N_COMPONENTS = 100 if use_pca else 100000
+    n_c = min(X_train.shape[0], X_train.shape[1], N_COMPONENTS) if use_pca else X_train.shape[1]
+
     if hyperparam is None:
-        hyperparam = find_hyperparameters(X_train, y_train, scores, 10, is_wlc=is_wlc)
+        hyperparam = find_hyperparameters(X_train, y_train, scores_train, mp.cpu_count(), is_wlc=False)
 
-    if len(train_data[0]['features']) > N_COMPONENTS:
-        clf = Pipeline([('pca', PCA(N_COMPONENTS, random_state=42)), ('minmax', MinMaxScaler()), ('rf', RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 1, 2: 1}))])
-    else:
-        clf = Pipeline([('minmax', MinMaxScaler()), ('rf', RandomForestClassifier(**hyperparam, class_weight={0: 1, 1: 1, 2: 1}))])
+    steps = []
+    if X_train.shape[1] > n_c:
+        steps.append(('pca', PCA(n_components=n_c, random_state=42)))
+    steps.append(('rf', RandomForestClassifier(**hyperparam, n_jobs=1)))
+    clf = Pipeline(steps)
 
     print('hyperparameters:', hyperparam)
-    print(np.mean(cross_val_score(clf, X_train, y_train, scores, cv=3)))
+    print("Inner CV score:", np.mean(cross_val_score(clf, X_train, y_train, scores_train, cv=3)))
 
     clf.fit(X_train, y_train)
-    return test_rnd_forest(clf, X_test, y_test, test_data, hyperparam)
-
+    return test_rnd_forest(clf, X_test, y_test, scores_test, scores_train, solvers, test_data, hyperparam)

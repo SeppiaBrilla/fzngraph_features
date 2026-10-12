@@ -17,3 +17,4 @@ ftg
 *.fzn
 *.cnf
 selected-PB25
+data/*features*/*

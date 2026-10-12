@@ -97,6 +97,7 @@ parser.add_argument('--rnd-state', required=True, type=int)
 parser.add_argument('--pca', required=False, action='store_true', help='Apply PCA to reduce the number of features')
 parser.add_argument('--all-levels', action='store_true', help='Use a concatenation of all aggregation levels instead of only the last one')
 parser.add_argument('--dataset', type=str, default='./data/pb_dataset.csv', help='Path to the PB dataset CSV')
+parser.add_argument('--cache-dir', type=str, default='data/features_pb', help='Directory to cache/load features')
 
 def main():
     args = parser.parse_args()
@@ -121,7 +122,7 @@ def main():
     train_data = data_to_list(train_df)
     test_data = data_to_list(test_df)
 
-    feat_cache_file = f'data/features_pb/{features_type.replace("-","")}-{fold}-{rnd_state}.csv'
+    feat_cache_file = f'{args.cache_dir}/{features_type.replace("-","")}-{fold}-{rnd_state}.csv'
     train_data, test_data = get_features(train_data, test_data, features_type, all_levels, feat_cache_file)
     print(f'Computed {features_type} features ({len(train_data[0]["features"])} dims), starting to train {model}')
 
@@ -142,8 +143,9 @@ def main():
     print(f'Results successfully saved to {output_file}')
 
 if __name__ == '__main__':
+    ztw_bin = os.environ.get("ZINC_TO_WL_BIN", "ZincToWl")
     env_8 = dict(os.environ, JULIA_NUM_THREADS="8")
-    server_8 = subprocess.Popen(['ZincToWl', "--server", "/tmp/zinctowl_8.sock"], env=env_8, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    server_8 = subprocess.Popen([ztw_bin, "--server", "/tmp/zinctowl_8.sock"], env=env_8, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
     time.sleep(2)
     try:
         main()
