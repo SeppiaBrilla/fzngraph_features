@@ -1,0 +1,538 @@
+{
+  "accuracy": 0.18840579710144928,
+  "score": 0.46424071928352345,
+  "clf_score": 0.46424071928352345,
+  "clf_par10": 3160.6513043478267,
+  "vbs_par10": 1580.5408695652175,
+  "sbs_par10": 4984.185507246378,
+  "sbs_test_par10": 4344.43811594203,
+  "sbs_solver": "zhenwei_kissat-sup[exp]",
+  "solvers_par10": {
+    "anders_satsuma-iter-ae-kissat-mab[main]": 4349.783768115942,
+    "anders_satsuma-iter-kissat[main]": 4575.32536231884,
+    "biere_cadical3[main]": 6086.934927536232,
+    "biere_isasat[main]": 7501.687971014493,
+    "biere_kissat-biere[main]": 5355.0346376811585,
+    "ding_kissat-mab-eae1[main-ai]": 5232.470289855073,
+    "ding_kissat-mab-eae2[main-ai]": 4987.2117391304355,
+    "ding_kissat-mab-eae3[main-ai]": 5553.408550724637,
+    "faraja_llmg[exp-ai]": 9860.241304347826,
+    "gopalan_kissat-evolve-b2[main-ai]": 5353.454057971015,
+    "gopalan_kissat-evolve-r1[main-ai]": 5191.231594202898,
+    "gopalan_kissat-evolve-rb[main-ai]": 5280.127101449275,
+    "gopalan_kissat-evolve[main-ai]": 5502.551014492754,
+    "green_lymphosat-verified[main-ai]": 5825.032608695651,
+    "green_lymphosat[main-ai]": 4344.43811594203,
+    "guo_kissat-ae-eg[main]": 5125.78579710145,
+    "guo_kissat-ae-hucb[main]": 5114.058985507246,
+    "liang_kissat-lr-ds[main]": 5839.404782608695,
+    "liang_kissat-mab-da[main]": 5396.9908695652175,
+    "oertel_satsuma-lex-ae-kissat-mab[main]": 5461.576086956521,
+    "oertel_satsuma-lex-kissat[main]": 5052.768115942029,
+    "reeves_cadical-xlc-freeze[main]": 6015.476231884058,
+    "yalun_kissat-eda-1[main]": 5284.996666666667,
+    "yalun_kissat-eda-2[main]": 5591.830724637681,
+    "yalun_kissat-eda-3[main]": 5640.995942028986,
+    "yalun_kissat-eda-4[main]": 5055.205652173913,
+    "zheng_kissat-mab-hypre-evolve[main-ai]": 4861.2557971014485,
+    "zheng_kissat-mab-hypre-satlution[main-ai]": 4806.382463768116,
+    "zheng_kissat-mab-hypre-v2[main]": 4897.582753623189,
+    "zheng_kissat-mab-hypre[main]": 4896.454202898551,
+    "zhenwei_kissat-sup[exp]": 4984.185507246378,
+    "zhenwei_mergesat-l[main-ai]": 5723.189565217391,
+    "zhenwei_mergesat[main]": 5737.268405797102
+  },
+  "predictions": {
+    "data/sat/fzn/02a46668243d6dabab4cf74d3811f6b6-1x1x13_1x3x6_pair_4_2_0_2_5_0.sanitized.fzn": {
+      "pred": 11,
+      "true": 6,
+      "pred_solver": "gopalan_kissat-evolve-rb[main-ai]",
+      "true_solver": "ding_kissat-mab-eae2[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/0359596347daa117da50950748bc06d1-j3037_9_rggt_bm1.fzn": {
+      "pred": 22,
+      "true": 0,
+      "pred_solver": "yalun_kissat-eda-1[main]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/0757e47d262b75171c0040987e6d20ce-vdwb_k6_n400.sanitized.fzn": {
+      "pred": 24,
+      "true": 0,
+      "pred_solver": "yalun_kissat-eda-3[main]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/0c9da400944b002f90fd385d4fdab385-DivS_568_11.cnf.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 3.35
+    },
+    "data/sat/fzn/117b99ffa16d21cb4ccb1c66829b0c7e-adv_gc_n50_k14_UNSAT_s42.sanitized.fzn": {
+      "pred": 21,
+      "true": 21,
+      "pred_solver": "reeves_cadical-xlc-freeze[main]",
+      "true_solver": "reeves_cadical-xlc-freeze[main]",
+      "runtime": 51.56
+    },
+    "data/sat/fzn/1397d1d4d8d831069a2cdf911321da07-adv_gc_n300_k10_UNSAT_s42.sanitized.fzn": {
+      "pred": 21,
+      "true": 21,
+      "pred_solver": "reeves_cadical-xlc-freeze[main]",
+      "true_solver": "reeves_cadical-xlc-freeze[main]",
+      "runtime": 0.97
+    },
+    "data/sat/fzn/1c0fe2ac410f3942e374ea72ec005d76-SDP_120_17_1675.sanitized.fzn": {
+      "pred": 29,
+      "true": 25,
+      "pred_solver": "zheng_kissat-mab-hypre[main]",
+      "true_solver": "yalun_kissat-eda-4[main]",
+      "runtime": 638.97
+    },
+    "data/sat/fzn/1f81f7e009f501014cb23a8c2d41836f-ACG-20-10p1.fzn": {
+      "pred": 32,
+      "true": 7,
+      "pred_solver": "zhenwei_mergesat[main]",
+      "true_solver": "ding_kissat-mab-eae3[main-ai]",
+      "runtime": 303.57
+    },
+    "data/sat/fzn/247e42e46495f1c4b8707e497af8c93e-16.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 0.04
+    },
+    "data/sat/fzn/2a38c5d48846ee1c35c4c40938082a16-sbdp4_138_2.sanitized.fzn": {
+      "pred": 24,
+      "true": 25,
+      "pred_solver": "yalun_kissat-eda-3[main]",
+      "true_solver": "yalun_kissat-eda-4[main]",
+      "runtime": 1644.77
+    },
+    "data/sat/fzn/2b7e863462991fd008f9898eca63ebf4-SC23_Timetable_C_481_E_50_Cl_32_D_6_T_50.fzn": {
+      "pred": 0,
+      "true": 12,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "gopalan_kissat-evolve[main-ai]",
+      "runtime": 53.76
+    },
+    "data/sat/fzn/2bb63853a9b8b9b9327a142210a9f437-Medium-result_b30.af_61.sanitized.fzn": {
+      "pred": 32,
+      "true": 31,
+      "pred_solver": "zhenwei_mergesat[main]",
+      "true_solver": "zhenwei_mergesat-l[main-ai]",
+      "runtime": 0.33
+    },
+    "data/sat/fzn/2d89fda1bd6a761ca5e2f4bb89202681-2.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 0.04
+    },
+    "data/sat/fzn/3005623c4df6f5056a41a26d0f173e70-DLTM_twitter634_77_13.fzn": {
+      "pred": 6,
+      "true": 22,
+      "pred_solver": "ding_kissat-mab-eae2[main-ai]",
+      "true_solver": "yalun_kissat-eda-1[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/306a29e966fa6293d407bc7ebbc3ecb1-lattice-25.24.sanitized.fzn": {
+      "pred": 26,
+      "true": 27,
+      "pred_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "true_solver": "zheng_kissat-mab-hypre-satlution[main-ai]",
+      "runtime": 0.33
+    },
+    "data/sat/fzn/30e8b47741a4104c01eeea1d00bbce9e-aes_equiv_encry_3_rounds.debugged.fzn": {
+      "pred": 21,
+      "true": 32,
+      "pred_solver": "reeves_cadical-xlc-freeze[main]",
+      "true_solver": "zhenwei_mergesat[main]",
+      "runtime": 481.89
+    },
+    "data/sat/fzn/31fa00368fc99b15c33c04eb6b257deb-cabp-P-can__445.mtx.rnd-k96.sanitized.fzn": {
+      "pred": 0,
+      "true": 17,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "liang_kissat-lr-ds[main]",
+      "runtime": 516.42
+    },
+    "data/sat/fzn/32e344a5ab3af245f982678d2b751c6d-lightsout_sat_24_unbounded_totalizer_corner_0_unsat.sanitized.fzn": {
+      "pred": 22,
+      "true": 6,
+      "pred_solver": "yalun_kissat-eda-1[main]",
+      "true_solver": "ding_kissat-mab-eae2[main-ai]",
+      "runtime": 3358.6
+    },
+    "data/sat/fzn/35e0b5a19c88961d98dd806e805759f4-count_p2_M33.sanitized.fzn": {
+      "pred": 26,
+      "true": 19,
+      "pred_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "true_solver": "oertel_satsuma-lex-ae-kissat-mab[main]",
+      "runtime": 0.12
+    },
+    "data/sat/fzn/3e44926d72e94f5ceccbb69de24033b2-newpol23-4.fzn": {
+      "pred": 21,
+      "true": 3,
+      "pred_solver": "reeves_cadical-xlc-freeze[main]",
+      "true_solver": "biere_isasat[main]",
+      "runtime": 131.69
+    },
+    "data/sat/fzn/3ed56242f55e3653dbceeb4a70221787-rbsat-v945c61409gyes9-sc2009.fzn": {
+      "pred": 0,
+      "true": 17,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "liang_kissat-lr-ds[main]",
+      "runtime": 19.1
+    },
+    "data/sat/fzn/44b7d2c8d08574002ac959e6d1ef30ae-1x1x14_1x2x9_pair_4_2_0_2_3_0.sanitized.fzn": {
+      "pred": 11,
+      "true": 16,
+      "pred_solver": "gopalan_kissat-evolve-rb[main-ai]",
+      "true_solver": "guo_kissat-ae-hucb[main]",
+      "runtime": 2230.68
+    },
+    "data/sat/fzn/4551c996fc6f5fbe62b43076abb25077-knight_18.fzn": {
+      "pred": 1,
+      "true": 14,
+      "pred_solver": "anders_satsuma-iter-kissat[main]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 181.5
+    },
+    "data/sat/fzn/4d6bd7b2c674fb67b271127586914b74-vdw_4_8_n145.sanitized.fzn": {
+      "pred": 14,
+      "true": 17,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "liang_kissat-lr-ds[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/5314fd6ccb53b6f6af49a594ea68a273-oski15a01b15s_opt.fzn": {
+      "pred": 0,
+      "true": 32,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "zhenwei_mergesat[main]",
+      "runtime": 528.87
+    },
+    "data/sat/fzn/53d23b2b464a5c041114eb1f00cc4b81-puzzle32_sat.fzn": {
+      "pred": 22,
+      "true": 14,
+      "pred_solver": "yalun_kissat-eda-1[main]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 1497.58
+    },
+    "data/sat/fzn/543e67dd5abc272c37775b1b742a1d9a-qwh.60.1728.shuffled-as.sat03-1659.fzn": {
+      "pred": 32,
+      "true": 32,
+      "pred_solver": "zhenwei_mergesat[main]",
+      "true_solver": "zhenwei_mergesat[main]",
+      "runtime": 31.4
+    },
+    "data/sat/fzn/62060247cd0ad566a828c30571c2c774-marijn-philips.fzn": {
+      "pred": 2,
+      "true": 14,
+      "pred_solver": "biere_cadical3[main]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 311.07
+    },
+    "data/sat/fzn/65ee6b49612eccb7d213e4d950f23677-lightsout_sat_22_unbounded_direct_planted150_4_sat.sanitized.fzn": {
+      "pred": 9,
+      "true": 24,
+      "pred_solver": "gopalan_kissat-evolve-b2[main-ai]",
+      "true_solver": "yalun_kissat-eda-3[main]",
+      "runtime": 200.28
+    },
+    "data/sat/fzn/67133027ab55906e3b757148ca7011dd-snw_16_9_Encpre.fzn": {
+      "pred": 0,
+      "true": 9,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "gopalan_kissat-evolve-b2[main-ai]",
+      "runtime": 573.29
+    },
+    "data/sat/fzn/6793abe982f9d5f9646f6657e13ecc39-55-140792.fzn": {
+      "pred": 14,
+      "true": 0,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/68ef4b1ed6a28c75defea64bb7d53e06-vdwb_k6_n350.sanitized.fzn": {
+      "pred": 12,
+      "true": 30,
+      "pred_solver": "gopalan_kissat-evolve[main-ai]",
+      "true_solver": "zhenwei_kissat-sup[exp]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/6db4b3f59a1e530ca5309d8a7544f5c3-color-19-4.shuffled-as.sat05-444.fzn": {
+      "pred": 19,
+      "true": 0,
+      "pred_solver": "oertel_satsuma-lex-ae-kissat-mab[main]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/6ddda96839bb24cd7389d5556d3ab16d-inithx.i.2.30.sanitized.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "anders_satsuma-iter-kissat[main]",
+      "runtime": 0.76
+    },
+    "data/sat/fzn/75b23436a531bbc4004f43009cb4546e-ntil-90d-43.sanitized.fzn": {
+      "pred": 23,
+      "true": 10,
+      "pred_solver": "yalun_kissat-eda-2[main]",
+      "true_solver": "gopalan_kissat-evolve-r1[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/7b9620b5d7da55bda43595fe37867acd-exam_90_80.sanitized.fzn": {
+      "pred": 0,
+      "true": 1,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "anders_satsuma-iter-kissat[main]",
+      "runtime": 0.58
+    },
+    "data/sat/fzn/7cd6b940be001c46c6294d7cac9aa610-vdw_4_8_n147.sanitized.fzn": {
+      "pred": 14,
+      "true": 0,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/7d311f620f4ebc4adf8f4079899750eb-x9-11033.sat.sanitized.fzn": {
+      "pred": 9,
+      "true": 10,
+      "pred_solver": "gopalan_kissat-evolve-b2[main-ai]",
+      "true_solver": "gopalan_kissat-evolve-r1[main-ai]",
+      "runtime": 364.02
+    },
+    "data/sat/fzn/7efc1b160fb755fb1e8b6bcc70bbeb90-SDP_132_18_9892.sanitized.fzn": {
+      "pred": 31,
+      "true": 5,
+      "pred_solver": "zhenwei_mergesat-l[main-ai]",
+      "true_solver": "ding_kissat-mab-eae1[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/8aa9ffb211d1cba850be2ee9d173b7e1-adv_gc_n300_k12_UNSAT_s42.sanitized.fzn": {
+      "pred": 21,
+      "true": 21,
+      "pred_solver": "reeves_cadical-xlc-freeze[main]",
+      "true_solver": "reeves_cadical-xlc-freeze[main]",
+      "runtime": 4.34
+    },
+    "data/sat/fzn/8d2b018a5f8855b6ba1868a3ffff9d2f-xorshift_r15_113.sanitized.fzn": {
+      "pred": 30,
+      "true": 30,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "zhenwei_kissat-sup[exp]",
+      "runtime": 1235.19
+    },
+    "data/sat/fzn/9078ea73ff67edf2b6dcd007c9696ca0-13.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 0.04
+    },
+    "data/sat/fzn/90937ed75ba0560158d8fe45f303868a-mp1-Nb7T08.fzn": {
+      "pred": 30,
+      "true": 0,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/91860f79f079fede859034c7d76a98a2-41-119494.fzn": {
+      "pred": 14,
+      "true": 11,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "gopalan_kissat-evolve-rb[main-ai]",
+      "runtime": 8.11
+    },
+    "data/sat/fzn/91e0db01b254eb78f6643328045bfeb9-sted5_0x1e3-20.fzn": {
+      "pred": 9,
+      "true": 14,
+      "pred_solver": "gopalan_kissat-evolve-b2[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/a08c17f9a3888841cf7bbc75a807ff7e-xorshift_r14_110.sanitized.fzn": {
+      "pred": 30,
+      "true": 30,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "zhenwei_kissat-sup[exp]",
+      "runtime": 262.79
+    },
+    "data/sat/fzn/a78606fdfd6cf6ee8358bd35fa833be6-as-p61-l22-o8-II-568.sanitized.fzn": {
+      "pred": 10,
+      "true": 4,
+      "pred_solver": "gopalan_kissat-evolve-r1[main-ai]",
+      "true_solver": "biere_kissat-biere[main]",
+      "runtime": 4127.44
+    },
+    "data/sat/fzn/a9856534b6ca67123d58dd5fd9c9a1b2-SDP_98_14_7360.sanitized.fzn": {
+      "pred": 5,
+      "true": 26,
+      "pred_solver": "ding_kissat-mab-eae1[main-ai]",
+      "true_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "runtime": 467.16
+    },
+    "data/sat/fzn/ab17eed90e4da47767f72f518e3b4a26-vdwb_k6_n250.sanitized.fzn": {
+      "pred": 12,
+      "true": 2,
+      "pred_solver": "gopalan_kissat-evolve[main-ai]",
+      "true_solver": "biere_cadical3[main]",
+      "runtime": 132.92
+    },
+    "data/sat/fzn/ab2ab3a0651f0f35ba319ad976b1b6fd-1.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 0.04
+    },
+    "data/sat/fzn/aca9f4faabeb57a57c678d55f5bbd2f4-12.sanitized.fzn": {
+      "pred": 14,
+      "true": 14,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 0.04
+    },
+    "data/sat/fzn/ad6bc2d583c43ff9ef00faad7e29a9c2-as-p99-l33-o6-rot-rfl-568-i.sanitized.fzn": {
+      "pred": 11,
+      "true": 22,
+      "pred_solver": "gopalan_kissat-evolve-rb[main-ai]",
+      "true_solver": "yalun_kissat-eda-1[main]",
+      "runtime": 473.45
+    },
+    "data/sat/fzn/b023ea0eb9adbd9182c01d7e2d443289-mp1-tri_ali_s11_c35_bail_UNS.fzn": {
+      "pred": 1,
+      "true": 31,
+      "pred_solver": "anders_satsuma-iter-kissat[main]",
+      "true_solver": "zhenwei_mergesat-l[main-ai]",
+      "runtime": 51.47
+    },
+    "data/sat/fzn/b0abaa97c4663edc2048d86de3e2b226-schooltt-5-3-9-2-4-5-10-0.1-0.2-seed4.sanitized.fzn": {
+      "pred": 27,
+      "true": 1,
+      "pred_solver": "zheng_kissat-mab-hypre-satlution[main-ai]",
+      "true_solver": "anders_satsuma-iter-kissat[main]",
+      "runtime": 181.08
+    },
+    "data/sat/fzn/b358bf7111086fd6d60b11c2f01465b8-crn_40_1521_s.fzn": {
+      "pred": 0,
+      "true": 14,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "green_lymphosat[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/b9a626da76f235aab854c6ef516b9240-AProVE07-26-sc2007.fzn": {
+      "pred": 30,
+      "true": 0,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/bcdc894819cf050e57849fe84a1e8cc4-chnl-020x101.sanitized.fzn": {
+      "pred": 26,
+      "true": 0,
+      "pred_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 0.24
+    },
+    "data/sat/fzn/bd0b055b890a9ace598a0c4aba40de30-sat-bench-trig-bhaskara.fzn": {
+      "pred": 0,
+      "true": 4,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "biere_kissat-biere[main]",
+      "runtime": 501.84
+    },
+    "data/sat/fzn/c615d49f357813514966186ab834be28-preimage_80r_486m_160h_seed_306.fzn": {
+      "pred": 30,
+      "true": 0,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/d0b5d1dc96a5bf33d2c65106c3b179a8-connm-ue-csp-sat-n600-d0.04-s1793042357.used-as.sat04-975.fzn": {
+      "pred": 0,
+      "true": 31,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "zhenwei_mergesat-l[main-ai]",
+      "runtime": 39.26
+    },
+    "data/sat/fzn/d5949f26c5c5128ef2d4ac4d3b432cc2-as-p51-l19-o8-II-568.sanitized.fzn": {
+      "pred": 10,
+      "true": 26,
+      "pred_solver": "gopalan_kissat-evolve-r1[main-ai]",
+      "true_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "runtime": 4607.23
+    },
+    "data/sat/fzn/db15a85651e0d941a11bf8640625edd8-mdp-32-11-sat.fzn": {
+      "pred": 30,
+      "true": 13,
+      "pred_solver": "zhenwei_kissat-sup[exp]",
+      "true_solver": "green_lymphosat-verified[main-ai]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/dd062c307e10ebbb0d5641709ff26a7e-SDP_108_15_6925.sanitized.fzn": {
+      "pred": 5,
+      "true": 27,
+      "pred_solver": "ding_kissat-mab-eae1[main-ai]",
+      "true_solver": "zheng_kissat-mab-hypre-satlution[main-ai]",
+      "runtime": 730.21
+    },
+    "data/sat/fzn/ddf6fff9ebbbe9ec2a02f70b3316db6d-QuasiGroup-4-12_c18.fzn": {
+      "pred": 25,
+      "true": 26,
+      "pred_solver": "yalun_kissat-eda-4[main]",
+      "true_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "runtime": 361.09
+    },
+    "data/sat/fzn/e2b819680a045a8af67f82fa2f3d945a-59-134241.fzn": {
+      "pred": 14,
+      "true": 0,
+      "pred_solver": "green_lymphosat[main-ai]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/e67d733d9938c565d6359002333611ff-WS_500_16_70_10.apx_2_DS-ST.fzn": {
+      "pred": 32,
+      "true": 31,
+      "pred_solver": "zhenwei_mergesat[main]",
+      "true_solver": "zhenwei_mergesat-l[main-ai]",
+      "runtime": 74.14
+    },
+    "data/sat/fzn/e685a5d96e1ee9e051f191eca84b0d88-sbdp4_140_2.sanitized.fzn": {
+      "pred": 24,
+      "true": 23,
+      "pred_solver": "yalun_kissat-eda-3[main]",
+      "true_solver": "yalun_kissat-eda-2[main]",
+      "runtime": 1701.15
+    },
+    "data/sat/fzn/f1d1a4fee20e2907c33465a88d1e24f2-openstacks-sequencedstrips-nonadl-nonnegated-os-sequencedstrips-p30_1.035-NOTKNOWN.fzn": {
+      "pred": 0,
+      "true": 0,
+      "pred_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "true_solver": "anders_satsuma-iter-ae-kissat-mab[main]",
+      "runtime": 10000.0
+    },
+    "data/sat/fzn/fbd9968f5067604694f11f14c07c5527-count_p2_M45.sanitized.fzn": {
+      "pred": 26,
+      "true": 19,
+      "pred_solver": "zheng_kissat-mab-hypre-evolve[main-ai]",
+      "true_solver": "oertel_satsuma-lex-ae-kissat-mab[main]",
+      "runtime": 0.17
+    }
+  },
+  "hyperparameters": {
+    "activation": "tanh",
+    "alpha": 0.01,
+    "learning_rate": "constant",
+    "max_iter": 15000,
+    "random_state": 42,
+    "solver": "adam"
+  }
+}

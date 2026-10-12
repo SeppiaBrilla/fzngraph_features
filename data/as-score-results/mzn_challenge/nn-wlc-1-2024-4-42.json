@@ -1,0 +1,28 @@
+{
+  "accuracy": 0.45,
+  "clf_score": 55.72860438582174,
+  "vbs_score": 69.37262467235614,
+  "sbs_solver": "cp-sat",
+  "sbs_score": 62.21115721125116,
+  "norm_score": -0.9051989498852235,
+  "solver_scores": {
+    "choco": 29.25207770511716,
+    "chuffed": 48.07524790039543,
+    "cp-sat": 62.21115721125116,
+    "gecode": 8.407430145593967,
+    "gurobi": 41.05408703764228
+  },
+  "hyperparameters": {
+    "activation": "relu",
+    "alpha": 0.0001,
+    "learning_rate": "constant",
+    "max_iter": 15000,
+    "random_state": 42,
+    "solver": "adam"
+  },
+  "fold": 4,
+  "year": 2024,
+  "features": "wlc-1",
+  "model": "nn",
+  "score": -0.9051989498852235
+}

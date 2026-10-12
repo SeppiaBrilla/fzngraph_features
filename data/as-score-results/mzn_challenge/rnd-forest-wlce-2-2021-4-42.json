@@ -1,0 +1,28 @@
+{
+  "accuracy": 0.45,
+  "clf_score": 50.87133512669678,
+  "vbs_score": 64.38432168645366,
+  "sbs_solver": "cp-sat",
+  "sbs_score": 49.696639075636966,
+  "norm_score": 0.07997831122757994,
+  "solver_scores": {
+    "choco": 28.428536554371796,
+    "chuffed": 33.76664792615294,
+    "cp-sat": 49.696639075636966,
+    "gecode": 14.342826829453246,
+    "gurobi": 44.76534961438505
+  },
+  "hyperparameters": {
+    "max_depth": 10,
+    "max_features": "log2",
+    "min_samples_leaf": 1,
+    "min_samples_split": 2,
+    "n_estimators": 400,
+    "random_state": 42
+  },
+  "fold": 4,
+  "year": 2021,
+  "features": "wlce-2",
+  "model": "rnd-forest",
+  "score": 0.07997831122757994
+}
