@@ -74,7 +74,7 @@ def split_stratified_by_gap(df: pd.DataFrame, rnd_state: int, current_fold: int,
     return train_df, test_df
 
 parser = argparse.ArgumentParser()
-parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'fzn2feat'])
+parser.add_argument('-f', '--features', type=str, required=True, choices=['wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2', 'wl-1', 'wl-2', 'wln-1', 'wln-2', 'wlun-1', 'wlun-2', 'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'wlune-1', 'wlune-2', 'fzn2feat', 'encoder'])
 parser.add_argument('-m', '--model', type=str, required=True, choices=['svc', 'rnd-forest', 'nn', 'gb'])
 parser.add_argument('--cv-fold', required=True, type=int)
 parser.add_argument('--max-cv', required=True, type=int)

@@ -83,4 +83,29 @@ for model in rnd-forest svc nn; do
   done
 done
 
+Run encoder baseline across all models
+echo ">>> Pre-extracting encoder for SAT instances..."
+"$PYTHON" generate_encoder_sat.py
+
+for model in rnd-forest svc nn; do
+  for fold in 0 1 2 3 4; do
+    res_file="${RES_DIR}/${model}-encoder-${fold}-${SEED}.json"
+    if [ ! -f "$res_file" ]; then
+      echo ">>> Running SAT: model=$model feat=encoder fold=$fold"
+      rm -f /tmp/zinctowl_8.sock
+      ZINC_TO_WL_BIN="$BIN" "$PYTHON" src/algorithm_selection_sat/algorithm_selection.py \
+        -f encoder \
+        -m "$model" \
+        --cv-fold "$fold" \
+        --max-cv 5 \
+        --rnd-state "$SEED" \
+        --dataset "$DATASET" \
+        --cache-dir "$CACHE_DIR" \
+        --result "$res_file"
+    else
+      echo ">>> $res_file already exists, skipping."
+    fi
+  done
+done
+
 echo ">>> All experiments including fzn2feat completed successfully!"

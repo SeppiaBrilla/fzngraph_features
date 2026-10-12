@@ -46,6 +46,13 @@ def get_fzn2feat(train_data: list[dict], test_data: list[dict], fzn2feat_path: s
         raise FileNotFoundError(f"fzn2feat features file not found at {fzn2feat_path}")
     return load_sat_features(train_data, test_data, fzn2feat_path)
 
+def get_encoder_features(train_data: list[dict], test_data: list[dict], encoder_features_path: str = './data/sat/sat_encoder.csv') -> tuple[list[dict], list[dict]]:
+    """
+    Loads pre-extracted encoder features using the 'flatzinc' path key for the SAT dataset.
+    """
+    if not os.path.exists(encoder_features_path):
+        raise FileNotFoundError(f"encoder features file not found at {encoder_features_path}")
+    return load_sat_features(train_data, test_data, encoder_features_path)
 
 def get_features(
     train_data: list[dict],
@@ -53,7 +60,7 @@ def get_features(
     features_type: Literal[
         'wlce-1', 'wlce-2', 'wlc-1', 'wlc-2', 'wlcu-1', 'wlcu-2', 'wlceu-1', 'wlceu-2',
         'wl-1', 'wl-2', 'wln-1', 'wlun-1', 'wlun-2', 'wlune-1', 'wlune-2', 'wln-2',
-        'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat'
+        'wle-0', 'wle-1', 'wle-2', 'wlne-1', 'wlne-2', 'fzn2feat', 'encoder'
     ],
     all_levels: bool = False,
     save_name: str = "Unk"
@@ -63,6 +70,8 @@ def get_features(
     """
     if features_type == 'fzn2feat':
         return get_fzn2feat(train_data, test_data)
+    elif features_type == 'encoder':
+        return get_encoder_features(train_data, test_data)
 
     if os.path.exists(save_name):
         return load_sat_features(train_data, test_data, save_name)
